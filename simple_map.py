@@ -65,7 +65,6 @@ def render_simple_map(df: pd.DataFrame):
          .reset_index()
     )
 
-    # Checkbox: usuń powiaty z 0 przypadków
     remove_zero = st.checkbox("Usuń powiaty z 0 przypadków", value=True)
     if remove_zero:
         agg = agg[agg["cases"] > 0]
@@ -73,8 +72,6 @@ def render_simple_map(df: pd.DataFrame):
     if agg.empty:
         st.info("Brak danych do pokazania na mapie.")
         return
-
-    # rozmiar punktu co najmniej 1 (żeby zera też było widać, gdy checkbox odznaczony)
     agg["size"] = agg["cases"].clip(lower=1)
     max_cases = int(agg["cases"].max()) if len(agg) else 0
 
@@ -84,7 +81,7 @@ def render_simple_map(df: pd.DataFrame):
         lon="longitude",
         size="size",
         color="cases",
-        color_continuous_scale="Blues",   # 0 jasne, 1+ coraz ciemniejsze
+        color_continuous_scale="Blues", 
         hover_name="Powiat",
         hover_data={"cases": True},
         zoom=5,
@@ -93,9 +90,8 @@ def render_simple_map(df: pd.DataFrame):
     fig.update_layout(
         mapbox_style="open-street-map",
         margin=dict(l=0, r=0, t=0, b=0),
-        uirevision="fixed",   # zapamiętuje widok
+        uirevision="fixed",
     )
-    # zablokuj przesuwanie/zoom (stałe okno)
     fig.update_xaxes(fixedrange=True)
     fig.update_yaxes(fixedrange=True)
 
@@ -106,3 +102,4 @@ def render_simple_map(df: pd.DataFrame):
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
