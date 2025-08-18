@@ -7,10 +7,9 @@ from delete_form import render_delete_form
 from powiat_utils import fill_powiat_auto
 from simple_map import render_simple_map
 
-# ====== Konfiguracja ======
+
 FILE_PATH = "praca.xlsx"
 
-# Kolumny wymagane przez aplikację — WERSJE BEZ SPACJI
 COLS = [
     "nr zamówienia", "nr badania", "imię konia",
     "Anoplocephala perfoliata", "Oxyuris equi",
@@ -18,7 +17,6 @@ COLS = [
     "Kod-pocztowy", "Powiat", "Miasto",
 ]
 
-# ====== Funkcje pomocnicze ======
 @st.cache_data(show_spinner=False)
 def load_df(path: str):
     try:
@@ -26,18 +24,16 @@ def load_df(path: str):
     except FileNotFoundError:
         df0 = pd.DataFrame()
 
-    # 1) Ujednolicenie nagłówków + usunięcie duplikatów i Unnamed
+
     if len(df0.columns) > 0:
         df0.columns = [str(c).strip() for c in df0.columns]
         df0 = df0.loc[:, ~df0.columns.duplicated()]
         df0 = df0.loc[:, ~df0.columns.str.contains("^Unnamed", case=False)]
 
-    # 2) Dołóż brakujące kolumny wymagane przez app
     for c in COLS:
         if c not in df0.columns:
             df0[c] = pd.NA
 
-    # 3) Typy binarne jako 0/1 (spójnie dla UI)
     for c in ["Anoplocephala perfoliata", "Oxyuris equi", "Parascaris equorum", "Strongyloides spp"]:
         if c in df0.columns:
             df0[c] = pd.to_numeric(df0[c], errors="coerce").fillna(0).astype(int)
@@ -50,16 +46,13 @@ def save_df(df: pd.DataFrame, path: str):
         if c not in df_out.columns:
             df_out[c] = pd.NA
     df_out.to_excel(path, index=False)
-    # ⬇⬇⬇ po każdym zapisie unieważnij cache
     st.cache_data.clear()
 
-# ====== UI ======
 st.set_page_config(page_title="Zamówienia", page_icon="📦", layout="wide")
 st.title("📦 Podgląd i dodawanie zamówień")
 
 df = load_df(FILE_PATH)
 
-# Lewy panel: wyszukiwarka + usuwanie
 with st.sidebar:
     st.header("🔎 Wyszukiwanie")
     q = st.text_input("Numer zamówienia (część lub całość)", placeholder="np. 12345")
@@ -69,13 +62,12 @@ with st.sidebar:
     st.header("🗑️ Usuń rekord")
     df, deleted = render_delete_form(df, FILE_PATH)
 
-# Automatyczne uzupełnienie powiatu (na bazie kodu)
+
 df, filled, used_col = fill_powiat_auto(df, powiat_col="Powiat", kod_candidates=("Kod-pocztowy", "Kod-pocztowy "))
 if filled:
     save_df(df, FILE_PATH)
     st.info(f"Uzupełniono 'Powiat' w {filled} wierszach (źródło: {used_col}).")
 
-# Widoki danych (tabela w stałej kolejności)
 st.subheader("📑 Wszystkie dane")
 desired_order = [
     "nr zamówienia", "nr badania", "imię konia",
@@ -99,13 +91,10 @@ if q and szukaj:
 else:
     st.dataframe(df, use_container_width=True, height=420)
 
-# Mapa (agregacja po powiecie)
 render_simple_map(df)
-
-# Formularze (dodawanie/edycja)
 df, added = render_add_form(df, FILE_PATH, COLS)
 df, edited = render_edit_form(df, FILE_PATH, COLS)
 
-# Odśwież po modyfikacjach
 if any([added, edited, deleted]):
     st.rerun()
+
