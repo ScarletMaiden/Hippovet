@@ -39,13 +39,12 @@ def render_add_form(df: pd.DataFrame, file_path: str, cols: List[str]):
             "Kod-pocztowy": (kod or "").strip(),
             "Miasto": (miasto or "").strip(),
         }
-        # Powiat z kodu (jeśli jest)
+
         if new_row["Kod-pocztowy"]:
             new_row["Powiat"] = powiat_from_postal(new_row["Kod-pocztowy"])
         else:
             new_row["Powiat"] = ""
 
-        # Dołóż brakujące kolumny
         for c in cols:
             if c not in df.columns:
                 df[c] = pd.NA
@@ -53,7 +52,6 @@ def render_add_form(df: pd.DataFrame, file_path: str, cols: List[str]):
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
         df.to_excel(file_path, index=False)
 
-        # ⬇⬇⬇ unieważnij cache po zapisie, żeby od razu było widać rekord
         st.cache_data.clear()
 
         st.success("✅ Rekord dodany.")
@@ -62,3 +60,4 @@ def render_add_form(df: pd.DataFrame, file_path: str, cols: List[str]):
     except Exception as e:
         st.error(f"❌ Nie udało się zapisać: {e}")
         return df, False
+
