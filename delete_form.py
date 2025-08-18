@@ -15,7 +15,6 @@ def render_delete_form(df: pd.DataFrame, file_path: str):
         try:
             df.to_excel(file_path, index=False)
 
-            # ⬇⬇⬇ unieważnij cache
             st.cache_data.clear()
 
             st.success(f"✅ Usunięto {n} rekord(y).")
@@ -25,3 +24,4 @@ def render_delete_form(df: pd.DataFrame, file_path: str):
             return df, False
 
     return df, False
+
