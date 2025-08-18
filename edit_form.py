@@ -60,7 +60,6 @@ def render_edit_form(df: pd.DataFrame, file_path: str, cols: List[str]):
 
         df.to_excel(file_path, index=False)
 
-        # ⬇⬇⬇ unieważnij cache
         st.cache_data.clear()
 
         st.success("✅ Zmiany zapisane.")
@@ -69,3 +68,4 @@ def render_edit_form(df: pd.DataFrame, file_path: str, cols: List[str]):
     except Exception as e:
         st.error(f"❌ Błąd przy zapisie: {e}")
         return df, False
+
