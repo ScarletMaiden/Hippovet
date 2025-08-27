@@ -92,4 +92,5 @@ if q and szukaj:
     if len(res) == 0:
         st.info("Brak wyników.")
     else:
-        st.success(f"Znaleziono {len(res)} rekord(y)
+        st.success(f"Znaleziono {len(res)} rekord(y).")
+
