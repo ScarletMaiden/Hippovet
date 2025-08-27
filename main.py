@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import streamlit as st
 
@@ -7,8 +8,8 @@ from delete_form import render_delete_form
 from powiat_utils import fill_powiat_auto
 from simple_map import render_simple_map
 
-
-FILE_PATH = "praca.xlsx"
+BASE_DIR = os.path.dirname(__file__)
+FILE_PATH = os.path.join(BASE_DIR, "praca.xlsx")
 
 COLS = [
     "nr zamówienia", "nr badania", "imię konia",
@@ -18,12 +19,11 @@ COLS = [
 ]
 
 @st.cache_data(show_spinner=False)
-def load_df(path: str):
+def load_df(path: str, _file_mtime: float | None):
     try:
         df0 = pd.read_excel(path, dtype=str)
     except FileNotFoundError:
         df0 = pd.DataFrame()
-
 
     if len(df0.columns) > 0:
         df0.columns = [str(c).strip() for c in df0.columns]
@@ -40,6 +40,7 @@ def load_df(path: str):
 
     return df0
 
+
 def save_df(df: pd.DataFrame, path: str):
     df_out = df.copy()
     for c in COLS:
@@ -51,7 +52,12 @@ def save_df(df: pd.DataFrame, path: str):
 st.set_page_config(page_title="Zamówienia", page_icon="📦", layout="wide")
 st.title("📦 Podgląd i dodawanie zamówień")
 
-df = load_df(FILE_PATH)
+try:
+    _MTIME = os.path.getmtime(FILE_PATH)
+except FileNotFoundError:
+    _MTIME = None
+
+df = load_df(FILE_PATH, _MTIME)
 
 with st.sidebar:
     st.header("🔎 Wyszukiwanie")
@@ -61,7 +67,6 @@ with st.sidebar:
     st.divider()
     st.header("🗑️ Usuń rekord")
     df, deleted = render_delete_form(df, FILE_PATH)
-
 
 df, filled, used_col = fill_powiat_auto(df, powiat_col="Powiat", kod_candidates=("Kod-pocztowy", "Kod-pocztowy "))
 if filled:
@@ -78,6 +83,7 @@ desired_order = [
 for col in desired_order:
     if col not in df.columns:
         df[col] = pd.NA
+
 df = df.loc[:, desired_order]
 
 if q and szukaj:
@@ -86,15 +92,4 @@ if q and szukaj:
     if len(res) == 0:
         st.info("Brak wyników.")
     else:
-        st.success(f"Znaleziono {len(res)} rekord(y).")
-        st.dataframe(res, use_container_width=True, height=420)
-else:
-    st.dataframe(df, use_container_width=True, height=420)
-
-render_simple_map(df)
-df, added = render_add_form(df, FILE_PATH, COLS)
-df, edited = render_edit_form(df, FILE_PATH, COLS)
-
-if any([added, edited, deleted]):
-    st.rerun()
-
+        st.success(f"Znaleziono {len(res)} rekord(y)
