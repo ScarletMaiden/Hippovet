@@ -8,6 +8,7 @@ from delete_form import render_delete_form
 from powiat_utils import fill_powiat_auto
 from simple_map import render_simple_map
 
+# ====== Konfiguracja ======
 BASE_DIR = os.path.dirname(__file__)
 FILE_PATH = os.path.join(BASE_DIR, "praca.xlsx")
 
@@ -18,6 +19,13 @@ COLS = [
     "Kod-pocztowy", "Powiat", "Miasto",
 ]
 
+# ====== Inicjalizacja pliku (jeśli brak) ======
+def _init_excel_if_missing(path: str):
+    if not os.path.exists(path):
+        df0 = pd.DataFrame({c: [] for c in COLS})
+        df0.to_excel(path, index=False)
+
+# ====== Funkcje pomocnicze ======
 @st.cache_data(show_spinner=False)
 def load_df(path: str, _file_mtime: float | None):
     try:
@@ -49,9 +57,14 @@ def save_df(df: pd.DataFrame, path: str):
     df_out.to_excel(path, index=False)
     st.cache_data.clear()
 
+# ====== UI ======
 st.set_page_config(page_title="Zamówienia", page_icon="📦", layout="wide")
 st.title("📦 Podgląd i dodawanie zamówień")
 
+# Upewnij się, że plik istnieje i ma nagłówki
+_init_excel_if_missing(FILE_PATH)
+
+# mtime pliku jako klucz cache
 try:
     _MTIME = os.path.getmtime(FILE_PATH)
 except FileNotFoundError:
@@ -59,6 +72,7 @@ except FileNotFoundError:
 
 df = load_df(FILE_PATH, _MTIME)
 
+# Lewy panel
 with st.sidebar:
     st.header("🔎 Wyszukiwanie")
     q = st.text_input("Numer zamówienia (część lub całość)", placeholder="np. 12345")
@@ -68,11 +82,13 @@ with st.sidebar:
     st.header("🗑️ Usuń rekord")
     df, deleted = render_delete_form(df, FILE_PATH)
 
+# Auto-uzupełnienie Powiatu
 df, filled, used_col = fill_powiat_auto(df, powiat_col="Powiat", kod_candidates=("Kod-pocztowy", "Kod-pocztowy "))
 if filled:
     save_df(df, FILE_PATH)
     st.info(f"Uzupełniono 'Powiat' w {filled} wierszach (źródło: {used_col}).")
 
+# Widok danych
 st.subheader("📑 Wszystkie dane")
 desired_order = [
     "nr zamówienia", "nr badania", "imię konia",
@@ -93,4 +109,17 @@ if q and szukaj:
         st.info("Brak wyników.")
     else:
         st.success(f"Znaleziono {len(res)} rekord(y).")
+        st.dataframe(res, use_container_width=True, height=420)
+else:
+    st.dataframe(df, use_container_width=True, height=420)
 
+# Mapa
+render_simple_map(df)
+
+# Formularze
+df, added = render_add_form(df, FILE_PATH, COLS)
+df, edited = render_edit_form(df, FILE_PATH, COLS)
+
+# Odśwież po modyfikacjach
+if any([added, edited, deleted]):
+    st.rerun()
