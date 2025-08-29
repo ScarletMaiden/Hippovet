@@ -3,3 +3,6 @@ pandas
 openpyxl
 pgeocode
 plotly
+gspread
+gspread-dataframe
+google-auth
