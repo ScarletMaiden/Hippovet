@@ -1,9 +1,9 @@
-from typing import List
+from typing import List, Callable
 import pandas as pd
 import streamlit as st
 from powiat_utils import powiat_from_postal
 
-def render_edit_form(df: pd.DataFrame, file_path: str, cols: List[str]):
+def render_edit_form(df: pd.DataFrame, save_fn: Callable[[pd.DataFrame], None], cols: List[str]):
     st.divider()
     st.subheader("✏️ Edytuj istniejący rekord")
 
@@ -55,12 +55,12 @@ def render_edit_form(df: pd.DataFrame, file_path: str, cols: List[str]):
         df.at[row_idx, "Parascaris equorum"] = int(p)
         df.at[row_idx, "Strongyloides spp"] = int(s)
 
+        # Uzupełnij/aktualizuj Powiat, jeśli mamy kod
         if df.at[row_idx, "Kod-pocztowy"]:
             df.at[row_idx, "Powiat"] = powiat_from_postal(df.at[row_idx, "Kod-pocztowy"])
 
-        df.to_excel(file_path, index=False)
-
-        st.cache_data.clear()
+        # 🔄 ZAPIS DO GOOGLE SHEETS
+        save_fn(df)
 
         st.success("✅ Zmiany zapisane.")
         return df, True
@@ -68,4 +68,3 @@ def render_edit_form(df: pd.DataFrame, file_path: str, cols: List[str]):
     except Exception as e:
         st.error(f"❌ Błąd przy zapisie: {e}")
         return df, False
-
