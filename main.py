@@ -8,20 +8,14 @@ from edit_form import render_edit_form
 from delete_form import render_delete_form
 from powiat_utils import fill_powiat_auto
 
-# (opcjonalnie) mapa – jeśli masz plik simple_map.py z funkcją render_simple_map
-try:
-    from simple_map import render_simple_map
-except Exception:
-    render_simple_map = None
-
-# ==== Google Sheets ====
+# Google Sheets
 import gspread
 from google.oauth2.service_account import Credentials
 from gspread_dataframe import get_as_dataframe, set_with_dataframe
 
-# ==== KONFIG ====
+# === KONFIG ===
 SHEET_ID = "1GAP0mBSS5TRrGTpPQW52rfG6zKdNHiEnE9kdsmC-Zkc"
-WORKSHEET_GID = 2113617863  # <- zakładka z linku (gid=...)
+WORKSHEET_GID = 2113617863  # <- zakładka z linku gid=...
 
 COLS = [
     "nr zamówienia", "nr badania", "imię konia",
@@ -42,32 +36,29 @@ SCOPES = [
 # ============ Google Sheets: połączenie ============
 @st.cache_resource(show_spinner=False)
 def _get_ws():
-    # 1) Pobierz cały JSON jako string z Secrets
     try:
         raw = st.secrets["gcp_service_account_json"]
     except KeyError:
-        st.error("Brak klucza 'gcp_service_account_json' w Settings → Secrets.")
+        st.error("❌ Brak klucza 'gcp_service_account_json' w Secrets.")
         st.stop()
 
-    # 2) Zparsuj na dict
     try:
         info = json.loads(raw)
     except Exception as e:
-        st.error(f"Nie mogę zinterpretować JSON z kluczem serwisowym: {type(e).__name__}: {e}")
+        st.error(f"❌ Nie mogę zinterpretować JSON z kluczem serwisowym: {type(e).__name__}: {e}")
         st.stop()
 
-    # 3) Uwierzytelnienie + otwarcie arkusza
     try:
         creds = Credentials.from_service_account_info(info, scopes=SCOPES)
         gc = gspread.authorize(creds)
         sh = gc.open_by_key(SHEET_ID)
         ws = sh.get_worksheet_by_id(WORKSHEET_GID)
         if ws is None:
-            st.error(f"Nie znaleziono zakładki o GID={WORKSHEET_GID}.")
+            st.error(f"❌ Nie znaleziono zakładki o GID={WORKSHEET_GID}.")
             st.stop()
         return ws
     except Exception as e:
-        st.error(f"Nie udało się połączyć z Google Sheets. Szczegóły: {type(e).__name__}: {e}")
+        st.error(f"❌ Nie udało się połączyć z Google Sheets. Szczegóły: {type(e).__name__}: {e}")
         st.stop()
 
 
@@ -78,7 +69,7 @@ def load_df() -> pd.DataFrame:
     df0 = get_as_dataframe(
         ws,
         evaluate_formulas=True,
-        header=1,     # pierwszy wiersz = nagłówki
+        header=1,  # pierwszy wiersz = nagłówki
         dtype=str,
         nrows=None
     )
@@ -86,9 +77,9 @@ def load_df() -> pd.DataFrame:
     if df0 is None:
         df0 = pd.DataFrame()
 
-    # porządkowanie nagłówków i pustych wierszy
     df0.columns = [str(c).strip() for c in df0.columns if c is not None]
     df0 = df0.dropna(how="all")
+
     if len(df0.columns) > 0:
         df0 = df0.loc[:, ~df0.columns.duplicated()]
 
@@ -101,22 +92,18 @@ def load_df() -> pd.DataFrame:
     for c in BINARY_COLS:
         df0[c] = pd.to_numeric(df0[c], errors="coerce").fillna(0).astype(int)
 
-    # poprawna kolejność kolumn
-    df0 = df0.loc[:, COLS]
-    return df0
+    return df0.loc[:, COLS]
 
 
 def save_df(df: pd.DataFrame) -> None:
     ws = _get_ws()
-
-    # upewnij się, że są wszystkie kolumny, we właściwej kolejności
     out = df.copy()
+
     for c in COLS:
         if c not in out.columns:
             out[c] = pd.NA
     out = out.loc[:, COLS]
 
-    # zapis z nagłówkami i resize
     set_with_dataframe(
         ws,
         out,
@@ -124,7 +111,7 @@ def save_df(df: pd.DataFrame) -> None:
         include_column_header=True,
         resize=True
     )
-    st.cache_data.clear()  # odśwież cache, aby od razu widzieć zmiany
+    st.cache_data.clear()  # odśwież cache
 
 
 # ============ UI ============
@@ -143,11 +130,11 @@ with st.sidebar:
     st.header("🗑️ Usuń rekord")
     df, deleted = render_delete_form(df, save_df)
 
-# Auto-uzupełnianie powiatu na podstawie kodu pocztowego
+# Auto-uzupełnianie powiatu
 df, filled, used_col = fill_powiat_auto(df, powiat_col="Powiat", kod_candidates=("Kod-pocztowy", "Kod-pocztowy "))
 if filled:
     save_df(df)
-    st.info(f"Uzupełniono 'Powiat' w {filled} wierszach (źródło: {used_col}).")
+    st.info(f"ℹ️ Uzupełniono 'Powiat' w {filled} wierszach (źródło: {used_col}).")
 
 # Widok tabeli
 st.subheader("📑 Wszystkie dane")
@@ -166,10 +153,6 @@ if q and szukaj:
         st.dataframe(res, use_container_width=True, height=420)
 else:
     st.dataframe(df, use_container_width=True, height=420)
-
-# Mapa – tylko jeśli masz moduł render_simple_map
-if render_simple_map is not None:
-    render_simple_map(df)
 
 # Formularze (dodawanie/edycja)
 df, added = render_add_form(df, save_df, COLS)
