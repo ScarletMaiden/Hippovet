@@ -182,7 +182,7 @@ else:
     st.dataframe(df, use_container_width=True, height=420)
 
 # mapa (jeśli moduł jest dostępny)
-st.subheader("🗺️ Mapa")
+st.subheader("")
 if render_simple_map is None:
     st.info("Mapa niedostępna (brak modułu simple_map lub zależności).")
 else:
@@ -198,3 +198,4 @@ df, edited = render_edit_form(df, save_df, COLS)
 # odśwież po modyfikacjach
 if any([added, edited, deleted]):
     st.rerun()
+
