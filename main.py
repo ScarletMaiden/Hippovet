@@ -1,3 +1,4 @@
+# main.py
 import pandas as pd
 import streamlit as st
 
@@ -5,113 +6,134 @@ from add_form import render_add_form
 from edit_form import render_edit_form
 from delete_form import render_delete_form
 from powiat_utils import fill_powiat_auto
-from simple_map import render_simple_map  # zostaw, jeśli masz ten moduł
 
-# ==== NOWE: Google Sheets ====
+# (opcjonalnie) mapa – jeśli masz moduł simple_map.py z funkcją render_simple_map
+try:
+    from simple_map import render_simple_map
+except Exception:
+    render_simple_map = None
+
+# ==== Google Sheets ====
 import gspread
 from google.oauth2.service_account import Credentials
 from gspread_dataframe import get_as_dataframe, set_with_dataframe
 
-# ==== KONFIGURACJA BACKENDU DANYCH ====
+# ==== KONFIG ====
 SHEET_ID = "1GAP0mBSS5TRrGTpPQW52rfG6zKdNHiEnE9kdsmC-Zkc"
 WORKSHEET_NAME = "praca"
 
-# Kolumny wymagane przez aplikację — nazwy bez dodatkowych spacji
 COLS = [
     "nr zamówienia", "nr badania", "imię konia",
     "Anoplocephala perfoliata", "Oxyuris equi",
     "Parascaris equorum", "Strongyloides spp",
     "Kod-pocztowy", "Powiat", "Miasto",
 ]
-
 BINARY_COLS = [
     "Anoplocephala perfoliata", "Oxyuris equi",
     "Parascaris equorum", "Strongyloides spp",
 ]
-
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive",
 ]
 
+
+# ============ Google Sheets: połączenie ============
 @st.cache_resource(show_spinner=False)
 def _get_ws():
-    """Zwraca uchwyt do worksheetu Google Sheets."""
-    # Sekrety MUSZĄ zawierać cały JSON konta serwisowego pod kluczem gcp_service_account
-    info = st.secrets["gcp_service_account"]
-    creds = Credentials.from_service_account_info(info, scopes=SCOPES)
-    gc = gspread.authorize(creds)
-    sh = gc.open_by_key(SHEET_ID)
-    return sh.worksheet(WORKSHEET_NAME)
+    # 1) pobierz sekrety i „usztywnij” private_key, jeśli ma dosłowne \n
+    try:
+        info = dict(st.secrets["gcp_service_account"])
+    except KeyError:
+        st.error("Brak sekcji [gcp_service_account] w Settings → Secrets. "
+                 "Wklej JSON konta serwisowego Google (z uprawnieniami do arkusza).")
+        st.stop()
 
+    pk = info.get("private_key", "")
+    if "\\n" in pk and "\n" not in pk:
+        info["private_key"] = pk.replace("\\n", "\n")
+
+    # 2) uwierzytelnienie
+    try:
+        creds = Credentials.from_service_account_info(info, scopes=SCOPES)
+        gc = gspread.authorize(creds)
+        sh = gc.open_by_key(SHEET_ID)
+        ws = sh.worksheet(WORKSHEET_NAME)
+        return ws
+    except Exception as e:
+        st.error(
+            "Nie udało się połączyć z Google Sheets.\n"
+            "Sprawdź:\n"
+            "• format 'private_key' (BEGIN/END + znaki nowej linii),\n"
+            "• czy arkusz udostępniono na adres z 'client_email' (Edytor),\n"
+            "• czy SHEET_ID i nazwa zakładki są poprawne."
+        )
+        st.stop()
+
+
+# ============ Dane: odczyt / zapis ============
 @st.cache_data(show_spinner=False)
 def load_df() -> pd.DataFrame:
-    """Czyta cały arkusz do DataFrame i porządkuje kolumny/typy."""
     ws = _get_ws()
     df0 = get_as_dataframe(
         ws,
         evaluate_formulas=True,
-        header=1,                 # 1. wiersz to nagłówki
-        dtype=str,                # czytamy jako tekst, potem rzutujemy binaria
+        header=1,     # pierwszy wiersz = nagłówki
+        dtype=str,
         nrows=None
     )
 
-    # Usuwamy puste wiersze na końcu/środku
     if df0 is None:
         df0 = pd.DataFrame()
-    else:
-        # gspread_dataframe potrafi dodać kolumnę None, czyśćmy nagłówki
-        df0.columns = [str(c).strip() for c in df0.columns if c is not None]
-        # usuń wiersze kompletnie puste
-        df0 = df0.dropna(how="all")
 
-    # 1) Ujednolicenie nagłówków + usunięcie duplikatów
+    # porządkowanie nagłówków i pustych wierszy
+    df0.columns = [str(c).strip() for c in df0.columns if c is not None]
+    df0 = df0.dropna(how="all")
     if len(df0.columns) > 0:
-        df0.columns = [str(c).strip() for c in df0.columns]
         df0 = df0.loc[:, ~df0.columns.duplicated()]
 
-    # 2) Dołóż brakujące kolumny wymagane przez app
+    # dołóż brakujące kolumny
     for c in COLS:
         if c not in df0.columns:
             df0[c] = pd.NA
 
-    # 3) Typy binarne jako 0/1 (spójnie dla UI)
+    # rzutuj binaria na 0/1
     for c in BINARY_COLS:
         df0[c] = pd.to_numeric(df0[c], errors="coerce").fillna(0).astype(int)
 
-    # Tylko wymagane kolumny, w oczekiwanej kolejności
+    # poprawna kolejność kolumn
     df0 = df0.loc[:, COLS]
-
     return df0
 
-def save_df(df: pd.DataFrame) -> None:
-    """Nadpisuje zawartość arkusza bieżącą ramką danych."""
-    ws = _get_ws()
-    # Upewnij się, że mamy wszystkie kolumny
-    df_out = df.copy()
-    for c in COLS:
-        if c not in df_out.columns:
-            df_out[c] = pd.NA
-    df_out = df_out.loc[:, COLS]
 
-    # Zapis z nagłówkiem i auto-dopasowaniem rozmiaru arkusza
+def save_df(df: pd.DataFrame) -> None:
+    ws = _get_ws()
+
+    # upewnij się, że są wszystkie kolumny, we właściwej kolejności
+    out = df.copy()
+    for c in COLS:
+        if c not in out.columns:
+            out[c] = pd.NA
+    out = out.loc[:, COLS]
+
+    # zapis z nagłówkami i resize
     set_with_dataframe(
         ws,
-        df_out,
+        out,
         include_index=False,
         include_column_header=True,
         resize=True
     )
-    # Po każdym zapisie unieważnij cache, żeby od razu było widać zmiany
-    st.cache_data.clear()
+    st.cache_data.clear()  # odśwież cache, aby od razu widzieć zmiany
 
-# ====== UI ======
+
+# ============ UI ============
 st.set_page_config(page_title="Zamówienia", page_icon="📦", layout="wide")
 st.title("📦 Podgląd i dodawanie zamówień")
 
 df = load_df()
 
-# Lewy panel: wyszukiwarka + usuwanie
+# Sidebar: wyszukiwanie + usuwanie
 with st.sidebar:
     st.header("🔎 Wyszukiwanie")
     q = st.text_input("Numer zamówienia (część lub całość)", placeholder="np. 12345")
@@ -119,21 +141,20 @@ with st.sidebar:
 
     st.divider()
     st.header("🗑️ Usuń rekord")
-    df, deleted = render_delete_form(df, save_df)  # ⬅ zmiana: przekazujemy funkcję zapisu
+    df, deleted = render_delete_form(df, save_df)
 
-# Automatyczne uzupełnienie powiatu (na bazie kodu)
+# Auto-uzupełnianie powiatu na podstawie kodu pocztowego
 df, filled, used_col = fill_powiat_auto(df, powiat_col="Powiat", kod_candidates=("Kod-pocztowy", "Kod-pocztowy "))
 if filled:
     save_df(df)
     st.info(f"Uzupełniono 'Powiat' w {filled} wierszach (źródło: {used_col}).")
 
-# Widoki danych (tabela w stałej kolejności)
+# Widok tabeli
 st.subheader("📑 Wszystkie dane")
-desired_order = COLS[:]  # zachowaj tę samą kolejność
-for col in desired_order:
+for col in COLS:
     if col not in df.columns:
         df[col] = pd.NA
-df = df.loc[:, desired_order]
+df = df.loc[:, COLS]
 
 if q and szukaj:
     mask = df["nr zamówienia"].astype(str).str.contains(q.strip(), case=False, na=False)
@@ -146,10 +167,11 @@ if q and szukaj:
 else:
     st.dataframe(df, use_container_width=True, height=420)
 
-# Mapa (agregacja po powiecie)
-render_simple_map(df)
+# Mapa – tylko jeśli masz moduł render_simple_map
+if render_simple_map is not None:
+    render_simple_map(df)
 
-# Formularze (dodawanie/edycja) — przekazujemy save_df zamiast ścieżki do Excela
+# Formularze (dodawanie/edycja)
 df, added = render_add_form(df, save_df, COLS)
 df, edited = render_edit_form(df, save_df, COLS)
 
