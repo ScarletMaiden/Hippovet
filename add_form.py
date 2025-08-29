@@ -2,12 +2,12 @@ import streamlit as st
 import pandas as pd
 from powiat_utils import load_df, save_df
 
-def add_form():
+def render_add_form():   # ← tu zmieniłem nazwę
     st.header("Dodaj nowy rekord")
 
     with st.form("add_record_form"):
         nr_zamowienia = st.text_input("Numer zamówienia")
-        nr_badania = st.text_input("Numer badania *")  # wymagane pole
+        nr_badania = st.text_input("Numer badania *")
         imie = st.text_input("Imię")
         nazwisko = st.text_input("Nazwisko")
         data = st.date_input("Data")
@@ -15,7 +15,7 @@ def add_form():
         submitted = st.form_submit_button("Dodaj rekord")
 
         if submitted:
-            if not nr_badania.strip():  # sprawdzamy czy niepuste
+            if not nr_badania.strip():
                 st.error("⚠ Numer badania jest wymagany. Rekord nie został dodany.")
             else:
                 df = load_df()
