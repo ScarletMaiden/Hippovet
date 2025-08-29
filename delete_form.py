@@ -1,31 +1,28 @@
-import streamlit as st
+from typing import Callable
 import pandas as pd
-from powiat_utils import load_df, save_df
+import streamlit as st
 
-def delete_form():
-    st.header("Usuń rekord")
+def render_delete_form(df: pd.DataFrame, save_fn: Callable[[pd.DataFrame], None]):
+    order_id = st.text_input("Podaj nr badania do usunięcia", key="delete_id")
+    delete_btn = st.button("Usuń rekord", type="primary", use_container_width=True)
 
-    with st.form("delete_record_form"):
-        nr_zamowienia = st.text_input("Numer zamówienia (opcjonalnie)")
-        nr_badania = st.text_input("Numer badania (opcjonalnie)")
+    if delete_btn and order_id:
+        mask = df["nr badania"].astype(str) == order_id.strip()
+        n = int(mask.sum())
+        if n == 0:
+            st.warning("Nie znaleziono rekordu o podanym numerze.")
+            return df, False
 
-        submitted = st.form_submit_button("Usuń rekord")
+        df = df.loc[~mask].copy()
 
-        if submitted:
-            if not nr_zamowienia.strip() and not nr_badania.strip():
-                st.error("⚠ Podaj numer zamówienia lub numer badania, aby usunąć rekord.")
-            else:
-                df = load_df()
-                start_len = len(df)
+        try:
+            # 🔄 ZAPIS DO GOOGLE SHEETS
+            save_fn(df)
 
-                if nr_zamowienia.strip():
-                    df = df[df["Numer zamówienia"] != nr_zamowienia]
+            st.success(f"✅ Usunięto {n} rekord(y).")
+            return df, True
+        except Exception as e:
+            st.error(f"❌ Błąd zapisu: {e}")
+            return df, False
 
-                if nr_badania.strip():
-                    df = df[df["Numer badania"] != nr_badania]
-
-                if len(df) < start_len:
-                    save_df(df)
-                    st.success("✅ Rekord został usunięty.")
-                else:
-                    st.warning("⚠ Nie znaleziono pasującego rekordu.")
+    return df, False
