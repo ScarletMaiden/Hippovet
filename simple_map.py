@@ -29,7 +29,7 @@ def _postal_to_coords(series: pd.Series) -> pd.DataFrame:
     return out.dropna(subset=["latitude", "longitude"]).drop_duplicates(subset=["code_norm"])
 
 def render_simple_map(df: pd.DataFrame):
-    st.subheader("🗺️ Prosta mapa punktowa (agregacja po powiecie)")
+    st.subheader("🗺️ Mapa (agregacja po powiecie)")
 
     parasite_cols = ["Anoplocephala perfoliata", "Oxyuris equi", "Parascaris equorum", "Strongyloides spp"]
     parasite = st.selectbox("Wybierz pasożyta:", parasite_cols, index=0)
@@ -102,4 +102,5 @@ def render_simple_map(df: pd.DataFrame):
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
 
