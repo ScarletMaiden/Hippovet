@@ -33,6 +33,13 @@ SCOPES = [
 
 st.set_page_config(page_title="Zamówienia", page_icon="📦", layout="wide")
 
+# --- import mapy (bez wywalania appki, jeśli brak zależności) ---
+try:
+    from simple_map import render_simple_map
+except Exception as _e:
+    render_simple_map = None
+    _map_import_err = str(_e)
+
 
 # ===== Google Sheets: połączenie =====
 @st.cache_resource(show_spinner=False)
@@ -190,6 +197,16 @@ if q and szukaj:
         st.dataframe(res, use_container_width=True, height=420)
 else:
     st.dataframe(df, use_container_width=True, height=420)
+
+# ===== MAPA =====
+st.subheader("🗺️ Mapa")
+if render_simple_map is None:
+    st.info("Moduł mapy nie został załadowany. Upewnij się, że w pliku requirements.txt masz: 'plotly' i 'pgeocode'.")
+else:
+    try:
+        render_simple_map(df)
+    except Exception as e:
+        st.error(f"Nie udało się narysować mapy: {type(e).__name__}: {e}")
 
 # formularze (dodawanie/edycja)
 df, added = render_add_form(df, save_df, COLS)
