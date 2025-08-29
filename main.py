@@ -1,13 +1,14 @@
 # main.py
 import pandas as pd
 import streamlit as st
+import json
 
 from add_form import render_add_form
 from edit_form import render_edit_form
 from delete_form import render_delete_form
 from powiat_utils import fill_powiat_auto
 
-# (opcjonalnie) mapa – jeśli masz moduł simple_map.py z funkcją render_simple_map
+# (opcjonalnie) mapa – jeśli masz plik simple_map.py z funkcją render_simple_map
 try:
     from simple_map import render_simple_map
 except Exception:
@@ -20,7 +21,7 @@ from gspread_dataframe import get_as_dataframe, set_with_dataframe
 
 # ==== KONFIG ====
 SHEET_ID = "1GAP0mBSS5TRrGTpPQW52rfG6zKdNHiEnE9kdsmC-Zkc"
-WORKSHEET_GID = 2113617863  # ← zamiast WORKSHEET_NAME
+WORKSHEET_GID = 2113617863  # <- zakładka z linku (gid=...)
 
 COLS = [
     "nr zamówienia", "nr badania", "imię konia",
@@ -41,27 +42,32 @@ SCOPES = [
 # ============ Google Sheets: połączenie ============
 @st.cache_resource(show_spinner=False)
 def _get_ws():
-    # pobierz sekrety i „usztywnij” private_key
-    info = dict(st.secrets["gcp_service_account"])
-    pk = info.get("private_key", "")
-    if "\\n" in pk and "\n" not in pk:
-        info["private_key"] = pk.replace("\\n", "\n")
+    # 1) Pobierz cały JSON jako string z Secrets
+    try:
+        raw = st.secrets["gcp_service_account_json"]
+    except KeyError:
+        st.error("Brak klucza 'gcp_service_account_json' w Settings → Secrets.")
+        st.stop()
 
+    # 2) Zparsuj na dict
+    try:
+        info = json.loads(raw)
+    except Exception as e:
+        st.error(f"Nie mogę zinterpretować JSON z kluczem serwisowym: {type(e).__name__}: {e}")
+        st.stop()
+
+    # 3) Uwierzytelnienie + otwarcie arkusza
     try:
         creds = Credentials.from_service_account_info(info, scopes=SCOPES)
         gc = gspread.authorize(creds)
         sh = gc.open_by_key(SHEET_ID)
-        ws = sh.get_worksheet_by_id(WORKSHEET_GID)  # używamy GID zamiast nazwy
+        ws = sh.get_worksheet_by_id(WORKSHEET_GID)
         if ws is None:
-            st.error(f"Nie znaleziono zakładki o GID={WORKSHEET_GID}. Sprawdź link do arkusza.")
+            st.error(f"Nie znaleziono zakładki o GID={WORKSHEET_GID}.")
             st.stop()
         return ws
-
     except Exception as e:
-        st.error(
-            "Nie udało się połączyć z Google Sheets.\n\n"
-            f"Szczegóły: {type(e).__name__}: {e}"
-        )
+        st.error(f"Nie udało się połączyć z Google Sheets. Szczegóły: {type(e).__name__}: {e}")
         st.stop()
 
 
@@ -172,5 +178,3 @@ df, edited = render_edit_form(df, save_df, COLS)
 # Odśwież po modyfikacjach
 if any([added, edited, deleted]):
     st.rerun()
-
-
