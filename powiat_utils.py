@@ -14,14 +14,15 @@ def _normalize_kod(kod: str) -> str:
 
 def powiat_from_postal(kod: str) -> str:
     k = _normalize_kod(kod)
-    if not k or str(k).strip().lower() in ("nan", "none"):
+    if not k or len(k) < 5:
         return ""
+    s = re.sub(r"\D", "", k)
     try:
         rec = _nomi.query_postal_code(k)
-        powiat = getattr(rec, "county_name", None)
-        if powiat is None or (isinstance(powiat, float) and pd.isna(powiat)) or str(powiat).strip() == "":
-            powiat = getattr(rec, "community_name", "") or ""
-        return str(powiat) if powiat else ""
+        # pgeocode może zwrócić nan, obsłużmy to defensywnie
+        admin2 = getattr(rec, "county_name", None)
+        admin2 = "" if admin2 is None else str(admin2)
+        return admin2
     except Exception:
         return ""
 
