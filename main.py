@@ -14,7 +14,7 @@ from gspread_dataframe import set_with_dataframe
 
 # ===== KONFIG =====
 SHEET_ID = "1GAP0mBSS5TRrGTpPQW52rfG6zKdNHiEnE9kdsmC-Zkc"
-WORKSHEET_GID = 2113617863  # gid=... z linku do zakładki
+WORKSHEET_GID = 2113617863  # gid=... z linku do zakładki (Twoja karta „praca”)
 
 COLS = [
     "nr zamówienia", "nr badania", "imię konia",
@@ -33,12 +33,11 @@ SCOPES = [
 
 st.set_page_config(page_title="Zamówienia", page_icon="📦", layout="wide")
 
-# --- import mapy (bez wywalania appki, jeśli brak zależności) ---
+# --- mapa (opcjonalnie) ---
 try:
     from simple_map import render_simple_map
-except Exception as _e:
+except Exception:
     render_simple_map = None
-    _map_import_err = str(_e)
 
 
 # ===== Google Sheets: połączenie =====
@@ -46,17 +45,7 @@ except Exception as _e:
 def _get_ws():
     try:
         raw = st.secrets["gcp_service_account_json"]
-    except KeyError:
-        st.error("❌ Brak klucza 'gcp_service_account_json' w Settings → Secrets.")
-        st.stop()
-
-    try:
         info = json.loads(raw)
-    except Exception as e:
-        st.error(f"❌ Nie mogę zinterpretować JSON z kluczem serwisowym: {type(e).__name__}: {e}")
-        st.stop()
-
-    try:
         creds = Credentials.from_service_account_info(info, scopes=SCOPES)
         gc = gspread.authorize(creds)
         sh = gc.open_by_key(SHEET_ID)
@@ -65,18 +54,20 @@ def _get_ws():
             st.error(f"❌ Nie znaleziono zakładki o GID={WORKSHEET_GID}.")
             st.stop()
         return ws
+    except KeyError:
+        st.error("❌ Brak klucza 'gcp_service_account_json' w Settings → Secrets.")
+        st.stop()
     except Exception as e:
         st.error(f"❌ Nie udało się połączyć z Google Sheets. Szczegóły: {type(e).__name__}: {e}")
         st.stop()
 
 
-# ===== ODCZYT (z wyborem wiersza nagłówków) =====
+# ===== ODCZYT (nagłówki w 1. wierszu) =====
 @st.cache_data(show_spinner=False)
-def load_df(header_row: int) -> pd.DataFrame:
-    """
-    header_row: 1-based (1 = pierwszy wiersz w arkuszu)
-    """
+def load_df() -> pd.DataFrame:
     ws = _get_ws()
+
+    # bierzemy wszystkie komórki i traktujemy 1. wiersz jako nagłówki
     values = ws.get_all_values() or []
     if not values:
         return pd.DataFrame(columns=COLS)
@@ -85,17 +76,15 @@ def load_df(header_row: int) -> pd.DataFrame:
     while values and all((c.strip() == "" for c in values[-1])):
         values.pop()
 
-    # 1-based -> 0-based
-    hdr_idx = max(0, min(len(values) - 1, header_row - 1))
-    headers = [h.strip() for h in values[hdr_idx]]
-    data_rows = values[hdr_idx + 1 :]
+    headers = [h.strip() for h in values[0]]
+    data_rows = values[1:]
 
-    # wyrównaj długości
+    # wyrównaj długości do liczby nagłówków
     width = len(headers)
     data_rows = [r[:width] + [""] * max(0, width - len(r)) for r in data_rows]
     df0 = pd.DataFrame(data_rows, columns=headers)
 
-    # aliasy nazw -> nazwy kanoniczne
+    # aliasy (gdyby nagłówki były bez polskich znaków)
     aliases = {
         "nr zamowienia": "nr zamówienia",
         "nr badania": "nr badania",
@@ -152,24 +141,18 @@ def save_df(df: pd.DataFrame) -> None:
 # ===== UI =====
 st.title("📦 Podgląd i dodawanie zamówień")
 
+# Sidebar (bez wyboru wiersza nagłówków)
 with st.sidebar:
-    st.header("⚙️ Ustawienia danych")
-    header_row = st.number_input(
-        "Wiersz nagłówków w arkuszu",
-        min_value=1, max_value=100, value=1, step=1,
-        help="1 = pierwszy wiersz, 2 = drugi itd."
-    )
-
     st.header("🔎 Wyszukiwanie")
     q = st.text_input("Numer zamówienia (część lub całość)", placeholder="np. 12345")
     szukaj = st.button("Szukaj", use_container_width=True)
 
     st.divider()
     st.header("🗑️ Usuń rekord")
-    # formularz usunięcia wywołamy po wczytaniu df (poniżej)
+    # formularz usunięcia uruchomimy po wczytaniu df (poniżej)
 
-# wczytaj dane po ustawieniu header_row
-df = load_df(header_row)
+# wczytaj dane
+df = load_df()
 
 with st.sidebar:
     df, deleted = render_delete_form(df, save_df)
@@ -198,10 +181,10 @@ if q and szukaj:
 else:
     st.dataframe(df, use_container_width=True, height=420)
 
-# ===== MAPA =====
+# mapa (jeśli moduł jest dostępny)
 st.subheader("🗺️ Mapa")
 if render_simple_map is None:
-    st.info("Moduł mapy nie został załadowany. Upewnij się, że w pliku requirements.txt masz: 'plotly' i 'pgeocode'.")
+    st.info("Mapa niedostępna (brak modułu simple_map lub zależności).")
 else:
     try:
         render_simple_map(df)
