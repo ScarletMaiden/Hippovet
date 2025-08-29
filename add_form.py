@@ -11,7 +11,7 @@ def render_add_form(df: pd.DataFrame, save_fn: Callable[[pd.DataFrame], None], c
         c1, c2, c3 = st.columns([1, 1, 1])
         with c1:
             nr_zam = st.text_input("nr zamówienia")
-            nr_bad = st.text_input("nr badania")
+            nr_bad = st.text_input("nr badania *", help="To pole jest wymagane")
             imie = st.text_input("imię konia")
         with c2:
             kod = st.text_input("Kod-pocztowy", help="np. 12-345 albo 12345")
@@ -20,19 +20,22 @@ def render_add_form(df: pd.DataFrame, save_fn: Callable[[pd.DataFrame], None], c
             a = st.radio("Anoplocephala perfoliata", ["0", "1"], horizontal=True)
             o = st.radio("Oxyuris equi", ["0", "1"], horizontal=True)
             p = st.radio("Parascaris equorum", ["0", "1"], horizontal=True)
-            s = st.radio("Strongylocephala perfoliata", ["0", "1"], horizontal=True)  # literówka? Jeśli tak, zmień na Strongyloides spp
-            # jeśli to literówka, zamień z powrotem:
-            # s = st.radio("Strongyloides spp", ["0", "1"], horizontal=True)
+            s = st.radio("Strongyloides spp", ["0", "1"], horizontal=True)
 
         submitted = st.form_submit_button("Dodaj")
 
     if not submitted:
         return df, False
 
+    # 🔒 Walidacja: wymagany numer badania
+    if not nr_bad or not nr_bad.strip():
+        st.error("⚠ Numer badania jest wymagany. Rekord nie został dodany.")
+        return df, False
+
     try:
         new_row = {
             "nr zamówienia": nr_zam.strip() if nr_zam else "",
-            "nr badania": nr_bad.strip() if nr_bad else "",
+            "nr badania": nr_bad.strip(),
             "imię konia": imie.strip() if imie else "",
             "Anoplocephala perfoliata": int(a),
             "Oxyuris equi": int(o),
