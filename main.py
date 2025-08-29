@@ -20,7 +20,7 @@ from gspread_dataframe import get_as_dataframe, set_with_dataframe
 
 # ==== KONFIG ====
 SHEET_ID = "1GAP0mBSS5TRrGTpPQW52rfG6zKdNHiEnE9kdsmC-Zkc"
-WORKSHEET_NAME = "praca"
+WORKSHEET_GID = 2113617863  # ← zamiast WORKSHEET_NAME
 
 COLS = [
     "nr zamówienia", "nr badania", "imię konia",
@@ -41,25 +41,22 @@ SCOPES = [
 # ============ Google Sheets: połączenie ============
 @st.cache_resource(show_spinner=False)
 def _get_ws():
-    # 1) pobierz sekrety i „usztywnij” private_key, jeśli ma dosłowne \n
-    try:
-        info = dict(st.secrets["gcp_service_account"])
-    except KeyError:
-        st.error("Brak sekcji [gcp_service_account] w Settings → Secrets. "
-                 "Wklej JSON konta serwisowego Google (z uprawnieniami do arkusza).")
-        st.stop()
-
+    # pobierz sekrety i „usztywnij” private_key
+    info = dict(st.secrets["gcp_service_account"])
     pk = info.get("private_key", "")
     if "\\n" in pk and "\n" not in pk:
         info["private_key"] = pk.replace("\\n", "\n")
 
-    # 2) uwierzytelnienie
-    try:
-        creds = Credentials.from_service_account_info(info, scopes=SCOPES)
-        gc = gspread.authorize(creds)
-        sh = gc.open_by_key(SHEET_ID)
-        ws = sh.worksheet(WORKSHEET_NAME)
-        return ws
+    # uwierzytelnienie + pobranie worksheetu po GID
+    creds = Credentials.from_service_account_info(info, scopes=SCOPES)
+    gc = gspread.authorize(creds)
+    sh = gc.open_by_key(SHEET_ID)
+    ws = sh.get_worksheet_by_id(WORKSHEET_GID)  # <<< kluczowa zmiana
+    if ws is None:
+        st.error(f"Nie znaleziono zakładki o GID={WORKSHEET_GID}. Sprawdź link do arkusza.")
+        st.stop()
+    return ws
+    
     except Exception as e:
         st.error(
             "Nie udało się połączyć z Google Sheets.\n"
@@ -178,3 +175,4 @@ df, edited = render_edit_form(df, save_df, COLS)
 # Odśwież po modyfikacjach
 if any([added, edited, deleted]):
     st.rerun()
+
