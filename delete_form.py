@@ -2,7 +2,6 @@ import pandas as pd
 import streamlit as st
 
 def render_delete_form(df: pd.DataFrame, file_path: str):
-    # usunięto subheader – nagłówek jest w sidebarze main.py
 
     key_choice = st.radio(
         "Wybierz po czym chcesz usunąć:",
@@ -43,3 +42,4 @@ def render_delete_form(df: pd.DataFrame, file_path: str):
             return df, False
 
     return df, False
+
