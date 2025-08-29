@@ -47,23 +47,20 @@ def _get_ws():
     if "\\n" in pk and "\n" not in pk:
         info["private_key"] = pk.replace("\\n", "\n")
 
-    # uwierzytelnienie + pobranie worksheetu po GID
-    creds = Credentials.from_service_account_info(info, scopes=SCOPES)
-    gc = gspread.authorize(creds)
-    sh = gc.open_by_key(SHEET_ID)
-    ws = sh.get_worksheet_by_id(WORKSHEET_GID)  # <<< kluczowa zmiana
-    if ws is None:
-        st.error(f"Nie znaleziono zakładki o GID={WORKSHEET_GID}. Sprawdź link do arkusza.")
-        st.stop()
-    return ws
-    
+    try:
+        creds = Credentials.from_service_account_info(info, scopes=SCOPES)
+        gc = gspread.authorize(creds)
+        sh = gc.open_by_key(SHEET_ID)
+        ws = sh.get_worksheet_by_id(WORKSHEET_GID)  # używamy GID zamiast nazwy
+        if ws is None:
+            st.error(f"Nie znaleziono zakładki o GID={WORKSHEET_GID}. Sprawdź link do arkusza.")
+            st.stop()
+        return ws
+
     except Exception as e:
         st.error(
-            "Nie udało się połączyć z Google Sheets.\n"
-            "Sprawdź:\n"
-            "• format 'private_key' (BEGIN/END + znaki nowej linii),\n"
-            "• czy arkusz udostępniono na adres z 'client_email' (Edytor),\n"
-            "• czy SHEET_ID i nazwa zakładki są poprawne."
+            "Nie udało się połączyć z Google Sheets.\n\n"
+            f"Szczegóły: {type(e).__name__}: {e}"
         )
         st.stop()
 
@@ -175,4 +172,5 @@ df, edited = render_edit_form(df, save_df, COLS)
 # Odśwież po modyfikacjach
 if any([added, edited, deleted]):
     st.rerun()
+
 
