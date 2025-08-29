@@ -12,7 +12,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from gspread_dataframe import set_with_dataframe
 
-# ========== KONFIG ==========
+# ===== KONFIG =====
 SHEET_ID = "1GAP0mBSS5TRrGTpPQW52rfG6zKdNHiEnE9kdsmC-Zkc"
 WORKSHEET_GID = 2113617863  # gid=... z linku do zakładki
 
@@ -34,24 +34,21 @@ SCOPES = [
 st.set_page_config(page_title="Zamówienia", page_icon="📦", layout="wide")
 
 
-# ========== Google Sheets: połączenie ==========
+# ===== Google Sheets: połączenie =====
 @st.cache_resource(show_spinner=False)
 def _get_ws():
-    # 1) pobierz cały JSON jako string z Secrets
     try:
         raw = st.secrets["gcp_service_account_json"]
     except KeyError:
         st.error("❌ Brak klucza 'gcp_service_account_json' w Settings → Secrets.")
         st.stop()
 
-    # 2) zparsuj JSON
     try:
         info = json.loads(raw)
     except Exception as e:
         st.error(f"❌ Nie mogę zinterpretować JSON z kluczem serwisowym: {type(e).__name__}: {e}")
         st.stop()
 
-    # 3) autoryzacja + uchwyt do worksheetu po GID
     try:
         creds = Credentials.from_service_account_info(info, scopes=SCOPES)
         gc = gspread.authorize(creds)
@@ -66,14 +63,13 @@ def _get_ws():
         st.stop()
 
 
-# ========== ODCZYT (z wyborem wiersza nagłówków) ==========
+# ===== ODCZYT (z wyborem wiersza nagłówków) =====
 @st.cache_data(show_spinner=False)
 def load_df(header_row: int) -> pd.DataFrame:
     """
     header_row: 1-based (1 = pierwszy wiersz w arkuszu)
     """
     ws = _get_ws()
-
     values = ws.get_all_values() or []
     if not values:
         return pd.DataFrame(columns=COLS)
@@ -87,12 +83,12 @@ def load_df(header_row: int) -> pd.DataFrame:
     headers = [h.strip() for h in values[hdr_idx]]
     data_rows = values[hdr_idx + 1 :]
 
-    # wyrównaj długości wierszy do liczby nagłówków
+    # wyrównaj długości
     width = len(headers)
     data_rows = [r[:width] + [""] * max(0, width - len(r)) for r in data_rows]
     df0 = pd.DataFrame(data_rows, columns=headers)
 
-    # aliasy nazw -> nazwy kanoniczne używane w aplikacji
+    # aliasy nazw -> nazwy kanoniczne
     aliases = {
         "nr zamowienia": "nr zamówienia",
         "nr badania": "nr badania",
@@ -108,25 +104,26 @@ def load_df(header_row: int) -> pd.DataFrame:
     }
     df0 = df0.rename(columns={c: aliases.get(str(c).strip().lower(), str(c).strip()) for c in df0.columns})
 
-    # normalizacja pustych wartości / „none”, „null”
+    # normalizacja pustych / „none” / „null”
     df0 = df0.replace(r"^\s*$", pd.NA, regex=True)
-    df0 = df0.mask(df0.astype(str).str.lower().isin(["none", "null"]))
+    lower = df0.astype(str).apply(lambda s: s.str.strip().str.lower())
+    df0 = df0.mask(lower.isin(["none", "null"]))
     df0 = df0.dropna(how="all")
 
-    # dołóż brakujące kolumny i ustaw kolejność
+    # dołóż brakujące kolumny i kolejność
     for c in COLS:
         if c not in df0.columns:
             df0[c] = pd.NA
     df0 = df0.loc[:, COLS]
 
-    # rzutuj kolumny binarne na 0/1
+    # binaria na 0/1
     for c in BINARY_COLS:
         df0[c] = pd.to_numeric(df0[c], errors="coerce").fillna(0).astype(int)
 
     return df0
 
 
-# ========== ZAPIS ==========
+# ===== ZAPIS =====
 def save_df(df: pd.DataFrame) -> None:
     ws = _get_ws()
     out = df.copy()
@@ -145,10 +142,9 @@ def save_df(df: pd.DataFrame) -> None:
     st.cache_data.clear()
 
 
-# ========== UI ==========
+# ===== UI =====
 st.title("📦 Podgląd i dodawanie zamówień")
 
-# Sidebar: wybór wiersza nagłówków + wyszukiwarka + usuwanie
 with st.sidebar:
     st.header("⚙️ Ustawienia danych")
     header_row = st.number_input(
@@ -163,27 +159,21 @@ with st.sidebar:
 
     st.divider()
     st.header("🗑️ Usuń rekord")
-    # UWAGA: formularz usuwa po 'nr badania' – tak jak w Twoim module delete_form
-    # funkcja zwraca zaktualizowany df i flagę czy usunięto
-    # (moduł delete_form musi wywołać save_df po usunięciu lub zwrócić df do zapisu)
-    # W naszym układzie przekazujemy save_df do modułu.
-    # Jeżeli Twój delete_form już sam zapisuje – możesz pominąć późniejsze save_df.
-    df_placeholder = pd.DataFrame(columns=COLS)  # tymczasowy, nadpiszemy po load_df
+    # formularz usunięcia wywołamy po wczytaniu df (poniżej)
 
-# Wczytaj dane po wybraniu wiersza nagłówków
+# wczytaj dane po ustawieniu header_row
 df = load_df(header_row)
 
 with st.sidebar:
-    # teraz mamy już df, więc uruchamiamy formularz usunięcia na aktualnych danych
     df, deleted = render_delete_form(df, save_df)
 
-# Auto-uzupełnianie powiatu (na podstawie kodu pocztowego)
+# auto-uzupełnianie powiatu
 df, filled, used_col = fill_powiat_auto(df, powiat_col="Powiat", kod_candidates=("Kod-pocztowy", "Kod-pocztowy "))
 if filled:
     save_df(df)
     st.info(f"ℹ️ Uzupełniono 'Powiat' w {filled} wierszach (źródło: {used_col}).")
 
-# Widok tabeli
+# tabela
 st.subheader("📑 Wszystkie dane")
 for col in COLS:
     if col not in df.columns:
@@ -201,10 +191,10 @@ if q and szukaj:
 else:
     st.dataframe(df, use_container_width=True, height=420)
 
-# Formularze (dodawanie/edycja)
+# formularze (dodawanie/edycja)
 df, added = render_add_form(df, save_df, COLS)
 df, edited = render_edit_form(df, save_df, COLS)
 
-# Po modyfikacjach odśwież widok
+# odśwież po modyfikacjach
 if any([added, edited, deleted]):
     st.rerun()
