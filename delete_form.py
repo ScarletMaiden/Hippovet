@@ -21,9 +21,6 @@ def _with_pozycja(df: pd.DataFrame) -> pd.DataFrame:
 def render_delete_form(df: pd.DataFrame, save_fn: Callable[[pd.DataFrame], None]):
     df = _with_pozycja(df)
 
-    st.divider()
-    st.subheader("🗑️ Usuń rekord")
-
     with st.form("delete_form"):
         option = st.radio(
             "Wybierz kryterium usuwania:",
@@ -82,3 +79,4 @@ def render_delete_form(df: pd.DataFrame, save_fn: Callable[[pd.DataFrame], None]
     except Exception as e:
         st.error(f"❌ Błąd zapisu: {e}")
         return df, False
+
