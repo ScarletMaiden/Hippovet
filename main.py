@@ -88,34 +88,21 @@ def inject_custom_css():
 # ===== FUNKCJA STOPKI (FOOTER) =====
 def render_footer():
     # Uproszczona stopka: logo po lewej, dane po prawej, ciemne tło
+    # Kluczem jest wywołanie st.markdown z parametrem unsafe_allow_html=True
     st.markdown("""
-    <style>
-    footer {visibility: hidden;} /* Ukrywa standardowe napisy Streamlit */
-    
-    .simple-footer {
-        background-color: #0e1117; /* Ciemne tło */
-        padding: 20px;
-        margin-top: 50px;
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 30px;
-        border-radius: 8px;
-    }
-    
-    .footer-text {
-        color: #ffffff;
-        font-family: sans-serif;
-        font-size: 14px;
-        line-height: 1.4;
-        text-align: left;
-    }
-    </style>
-    
-    <div class="simple-footer">
+    <div style="
+        background-color: #0e1117; 
+        color: #ffffff; 
+        padding: 20px; 
+        margin-top: 50px; 
+        display: flex; 
+        align-items: center; 
+        gap: 30px; 
+        border-top: 1px solid #333;
+    ">
         <img src="https://raw.githubusercontent.com/ScarletMaiden/Hippovet/testy-nowego-wygladu/612_124_hippovet_logo_poziom_1500px.png" width="100">
         
-        <div class="footer-text">
+        <div style="font-family: sans-serif; font-size: 14px; line-height: 1.5;">
             <strong>HippoVet+ dr Krzysztof Marycz</strong><br>
             <strong>JKI Innovation Julia Kaczmarczyk</strong><br>
             ul. Jesionowa 11<br>
@@ -124,6 +111,9 @@ def render_footer():
         </div>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Ukrycie domyślnych elementów Streamlit
+    st.markdown("<style>footer {visibility: hidden;}</style>", unsafe_allow_html=True)
 # ===== POŁĄCZENIE Z GOOGLE SHEETS =====
 @st.cache_resource(show_spinner=False)
 def _get_ws():
@@ -450,6 +440,7 @@ else:
 
 # STOPKA
 render_footer()
+
 
 
 
