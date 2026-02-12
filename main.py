@@ -87,7 +87,45 @@ def inject_custom_css():
 
 # ===== FUNKCJA STOPKI (FOOTER) =====
 def render_footer():
-    st.markdown("""
+    # Definiujemy style i treść stopki w jednej zmiennej
+    footer_html = """
+    <style>
+    /* Ukrywamy domyślną stopkę Streamlit */
+    footer {visibility: hidden;}
+    
+    .safe-footer {
+        width: 100%;
+        background-color: #f8f9fa;
+        border-top: 1px solid #e9ecef;
+        padding: 40px 20px;
+        color: #495057;
+        font-family: sans-serif;
+        font-size: 14px;
+        margin-top: 80px;
+        border-radius: 10px;
+    }
+    
+    .footer-content {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+    
+    .footer-column {
+        flex: 1;
+        min-width: 250px;
+    }
+    
+    .footer-right {
+        text-align: right;
+    }
+    
+    @media (max-width: 700px) {
+        .footer-right { text-align: left; margin-top: 20px; }
+    }
+    </style>
+    
     <div class="safe-footer">
         <div class="footer-content">
             <div class="footer-column">
@@ -110,8 +148,9 @@ def render_footer():
             </div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
-
+    """
+    # KLUCZOWY MOMENT: Używamy unsafe_allow_html=True
+    st.markdown(footer_html, unsafe_allow_html=True)
 
 # ===== POŁĄCZENIE Z GOOGLE SHEETS =====
 @st.cache_resource(show_spinner=False)
@@ -439,6 +478,7 @@ else:
 
 # STOPKA
 render_footer()
+
 
 
 
