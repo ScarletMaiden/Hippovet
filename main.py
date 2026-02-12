@@ -1,5 +1,6 @@
 # main.py
 import json
+import os  # <--- Dodano import do sprawdzania plików
 import pandas as pd
 import streamlit as st
 
@@ -58,7 +59,6 @@ def render_footer():
         border-top: 1px solid #eee;
         z-index: 1000;
     }
-    /* Ukrycie domyślnej stopki Streamlit */
     footer {visibility: hidden;}
     </style>
     
@@ -171,9 +171,8 @@ def render_public_view(df: pd.DataFrame):
     if "selected_map_view" not in st.session_state:
         st.session_state["selected_map_view"] = "konie"
 
-    # === TUTAJ ZMIANA: WYŚRODKOWANY NAGŁÓWEK ===
     st.markdown("<h3 style='text-align: center;'>🗺️ Wybierz mapę występowania</h3>", unsafe_allow_html=True)
-    st.write("") # Mały odstęp
+    st.write("") 
 
     # Przyciski
     c1, c2, c3 = st.columns(3)
@@ -320,8 +319,17 @@ if "show_login_form" not in st.session_state:
 
 df = load_df()
 
+# --- SIDEBAR (Pasek boczny) ---
 with st.sidebar:
-    st.image("https://placehold.co/200x100?text=HIPPOVET", use_container_width=True)
+    # 1. LOGO: Sprawdzamy czy wgrano plik 'logo.png'
+    # Jeśli plik istnieje, wyświetlamy go. Jeśli nie - placeholder.
+    if os.path.exists("logo.png"):
+        st.image("logo.png", use_container_width=True)
+    elif os.path.exists("logo.jpg"):
+        st.image("logo.jpg", use_container_width=True)
+    else:
+        st.image("https://placehold.co/200x100?text=HIPPOVET", use_container_width=True)
+
     
     if st.session_state["logged_in"]:
         st.success("Zalogowano: Admin")
