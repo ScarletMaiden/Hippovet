@@ -56,71 +56,76 @@ def get_logo_path():
     return None
 
 
-# ===== FUNKCJA STOPKI (FOOTER) =====
+# ===== FUNKCJA STOPKI (FOOTER) - WERSJA PRZYKLEJONA (FIXED) =====
 def render_footer():
     st.markdown("""
     <style>
-    /* Ukrywamy domyślną stopkę Streamlit */
+    /* Ukrywamy domyślną stopkę Streamlit i dodajemy odstęp na dole strony, żeby treść nie wjeżdżała pod stopkę */
     footer {visibility: hidden;}
-    
-    .custom-footer {
-        width: 100%;
-        background-color: #f8f9fa; /* Jasne tło stopki */
-        border-top: 1px solid #e9ecef;
-        padding: 40px 20px;
-        color: #6c757d;
-        font-size: 14px;
-        margin-top: 60px;
-        font-family: sans-serif;
+    .block-container {
+        padding-bottom: 150px; /* Miejsce na stopkę */
     }
     
-    .footer-container {
-        max-width: 1200px;
+    .fixed-footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: white; /* Białe tło */
+        border-top: 2px solid #f0f2f6; /* Delikatna ramka */
+        color: #666;
+        font-size: 13px;
+        font-family: sans-serif;
+        z-index: 99999; /* Zawsze na wierzchu */
+        padding: 15px 40px;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.05); /* Lekki cień */
+    }
+    
+    .footer-content {
+        max-width: 1400px;
         margin: 0 auto;
         display: flex;
-        justify-content: space-between; /* Lewa i Prawa strona */
-        flex-wrap: wrap;
-        gap: 30px;
+        justify-content: space-between;
+        align-items: center;
     }
     
     .footer-left {
         text-align: left;
-        line-height: 1.6;
     }
     
     .footer-right {
         text-align: right;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
     }
     
-    /* Na telefonach środkujemy wszystko */
-    @media (max-width: 700px) {
-        .footer-container {
+    /* Na telefonach układamy jedno pod drugim */
+    @media (max-width: 800px) {
+        .footer-content {
             flex-direction: column;
+            gap: 15px;
             text-align: center;
         }
         .footer-left, .footer-right {
             text-align: center;
         }
+        /* Powiększamy padding na dole strony mobilnej */
+        .block-container {
+            padding-bottom: 250px; 
+        }
     }
     </style>
     
-    <div class="custom-footer">
-        <div class="footer-container">
+    <div class="fixed-footer">
+        <div class="footer-content">
             
             <div class="footer-left">
-                <strong>HippoVet+ dr Krzysztof Marycz</strong><br>
-                <strong>JKI Innovation Julia Kaczmarczyk</strong><br>
-                ul. Jesionowa 11<br>
-                51-114 Malin<br>
-                <span style="font-size: 13px;">NIP: 9442115437, REGON: 387433495</span>
+                <strong>HippoVet+ dr Krzysztof Marycz</strong> | <strong>JKI Innovation Julia Kaczmarczyk</strong><br>
+                ul. Jesionowa 11, 51-114 Malin<br>
+                NIP: 9442115437 | REGON: 387433495
             </div>
             
             <div class="footer-right">
-                <p style="margin: 0;">&copy; 2025 <b>Hippovet</b>. Wszelkie prawa zastrzeżone.</p>
-                <p style="margin: 5px 0 0 0; font-style: italic; color: #adb5bd;">Dbamy o zdrowie Twoich koni 🐴</p>
+                &copy; 2025 <b>Hippovet</b><br>
+                <span style="font-style: italic; color: #999;">Dbamy o zdrowie Twoich koni 🐴</span>
             </div>
             
         </div>
@@ -444,5 +449,5 @@ if st.session_state["logged_in"]:
 else:
     render_public_view(df)
 
-# STOPKA (WYWOŁYWANA ZAWSZE NA KOŃCU)
+# STOPKA
 render_footer()
