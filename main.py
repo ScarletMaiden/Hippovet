@@ -116,7 +116,7 @@ def render_footer():
     with col1:
         # Wyświetlamy logo (upewnij się, że plik jest w folderze głównym na GitHub)
         try:
-            st.image("612_124_hippovet_logo_poziom_1500px.png", width=110)
+            st.image("612_124_hippovet_logo_poziom_1500px.png", width=150)
         except:
             st.write("🐴 HippoVet")
             
@@ -456,6 +456,7 @@ else:
 
 # STOPKA
 render_footer()
+
 
 
 
