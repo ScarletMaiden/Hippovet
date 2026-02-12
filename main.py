@@ -89,29 +89,47 @@ def inject_custom_css():
 import base64
 
 def render_footer():
-    # 1. Tworzymy linię oddzielającą
+    # Odstęp od góry
     st.write("---")
     
-    # 2. Układamy logo i tekst obok siebie (kolumny Streamlit)
-    col1, col2 = st.columns([1, 4])
+    # CSS dla lekkiej czcionki i układu
+    st.markdown("""
+        <style>
+        footer {visibility: hidden;}
+        .light-footer-text {
+            font-family: 'Source Sans Pro', sans-serif;
+            font-weight: 300; /* Bardzo lekka czcionka */
+            font-size: 13px;
+            line-height: 1.6;
+            color: #bdc3c7; /* Delikatny szary kolor */
+        }
+        .light-footer-text strong {
+            font-weight: 400; /* Tylko pogrubione nazwy nieco mocniejsze */
+            color: #ffffff;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Układ: małe logo po lewej, dane po prawej
+    col1, col2 = st.columns([1, 5])
     
     with col1:
-        # Wyświetlamy logo bezpośrednio z pliku, który wgrałaś
+        # Wyświetlamy logo (upewnij się, że plik jest w folderze głównym na GitHub)
         try:
-            st.image("612_124_hippovet_logo_poziom_1500px.png", width=120)
+            st.image("612_124_hippovet_logo_poziom_1500px.png", width=110)
         except:
-            # Awaryjnie, jeśli GitHub jeszcze nie przetworzył pliku
-            st.markdown("🐴 **HIPPOVET**")
-    
+            st.write("🐴 HippoVet")
+            
     with col2:
-        # Dane tekstowe bez żadnego skomplikowanego kodu HTML
-        st.markdown("""
-        **HippoVet+ dr Krzysztof Marycz** **JKI Innovation Julia Kaczmarczyk** ul. Jesionowa 11, 51-114 Malin  
-        NIP: 9442115437, REGON: 387433495
-        """)
-
-    # 3. Ukrywamy techniczne napisy Streamlit
-    st.markdown("<style>footer {visibility: hidden;}</style>", unsafe_allow_html=True)
+        # Dane z klasą CSS dla lekkiej czcionki
+        st.markdown(f"""
+            <div class="light-footer-text">
+                <strong>HippoVet+ dr Krzysztof Marycz</strong><br>
+                <strong>JKI Innovation Julia Kaczmarczyk</strong><br>
+                ul. Jesionowa 11, 51-114 Malin<br>
+                NIP: 9442115437, REGON: 387433495
+            </div>
+        """, unsafe_allow_html=True)
 # ===== POŁĄCZENIE Z GOOGLE SHEETS =====
 @st.cache_resource(show_spinner=False)
 def _get_ws():
@@ -438,6 +456,7 @@ else:
 
 # STOPKA
 render_footer()
+
 
 
 
