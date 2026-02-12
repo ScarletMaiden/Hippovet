@@ -87,71 +87,44 @@ def inject_custom_css():
 
 # ===== FUNKCJA STOPKI (FOOTER) =====
 def render_footer():
-    # Definiujemy treść stopki jako tekst HTML
-    footer_html = """
-    <style>
-    /* Ukrywamy domyślne napisy Streamlit na samym dole */
-    footer {visibility: hidden;}
+    # Pobieramy ścieżkę do logo, którą już masz w kodzie
+    logo_path = get_logo_path()
     
-    .safe-footer {
-        width: 100%;
-        background-color: #f8f9fa; /* Jasne tło */
-        border-top: 1px solid #e9ecef;
-        padding: 40px 20px;
-        color: #495057; /* Ciemny tekst */
+    # Tworzymy uproszczoną stopkę na ciemnym tle
+    st.markdown(f"""
+    <style>
+    footer {{visibility: hidden;}} /* Ukrywa napisy Streamlit */
+    
+    .simple-footer {{
+        background-color: #0e1117; /* Ciemne tło pasujące do aplikacji */
+        padding: 30px;
+        margin-top: 50px;
+        border-top: 1px solid #333;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }}
+    
+    .footer-text {{
+        color: #ffffff;
         font-family: sans-serif;
         font-size: 14px;
-        margin-top: 80px;
-        border-radius: 10px;
-    }
-    
-    .footer-content {
-        display: flex;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 20px;
-    }
-    
-    .footer-column {
-        flex: 1;
-        min-width: 250px;
-    }
-    
-    .footer-right {
-        text-align: right;
-    }
-    
-    @media (max-width: 700px) {
-        .footer-right { text-align: left; margin-top: 20px; }
-    }
+        line-height: 1.5;
+    }}
     </style>
     
-    <div class="safe-footer">
-        <div class="footer-content">
-            <div class="footer-column">
-                <strong style="color: #212529;">HippoVet+ dr Krzysztof Marycz</strong><br>
-                <strong style="color: #212529;">JKI Innovation Julia Kaczmarczyk</strong><br>
-                <div style="margin-top: 10px; line-height: 1.6;">
-                    ul. Jesionowa 11<br>
-                    51-114 Malin
-                </div>
-                <div style="margin-top: 10px; font-size: 13px; color: #6c757d;">
-                    NIP: 9442115437 | REGON: 387433495
-                </div>
-            </div>
-            
-            <div class="footer-column footer-right">
-                <h4 style="margin: 0; color: #212529;">🐴 Hippovet</h4>
-                <p style="margin: 5px 0 0 0; color: #6c757d;">Centrum Wyników Badań</p>
-                <br>
-                <small>&copy; 2025 Wszelkie prawa zastrzeżone.</small>
-            </div>
+    <div class="simple-footer">
+        <img src="https://raw.githubusercontent.com/ScarletMaiden/Hippovet/testy-nowego-wygladu/612_124_hippovet_logo_poziom_1500px.png" width="120">
+        
+        <div class="footer-text">
+            <strong>HippoVet+ dr Krzysztof Marycz</strong><br>
+            <strong>JKI Innovation Julia Kaczmarczyk</strong><br>
+            ul. Jesionowa 11<br>
+            51-114 Malin<br>
+            NIP: 9442115437, REGON: 387433495
         </div>
     </div>
-    """
-    
-    # KLUCZOWA ZMIANA: Używamy markdown z unsafe_allow_html=True
-    st.markdown(footer_html, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 # ===== POŁĄCZENIE Z GOOGLE SHEETS =====
 @st.cache_resource(show_spinner=False)
 def _get_ws():
@@ -478,6 +451,7 @@ else:
 
 # STOPKA
 render_footer()
+
 
 
 
