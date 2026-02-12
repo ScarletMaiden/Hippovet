@@ -3,6 +3,7 @@ import json
 import pandas as pd
 import streamlit as st
 
+# Importy z Twoich plików
 from add_form import render_add_form
 from edit_form import render_edit_form
 from delete_form import render_delete_form
@@ -12,9 +13,9 @@ import gspread
 from google.oauth2.service_account import Credentials
 from gspread_dataframe import set_with_dataframe
 
-# ===== KONFIG =====
+# ===== KONFIGURACJA =====
 SHEET_ID = "1GAP0mBSS5TRrGTpPQW52rfG6zKdNHiEnE9kdsmC-Zkc"
-WORKSHEET_GID = 2113617863  # gid=... z linku do zakładki („praca”)
+WORKSHEET_GID = 2113617863
 
 COLS = [
     "nr zamówienia", "nr badania", "imię konia",
@@ -31,16 +32,16 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive",
 ]
 
-st.set_page_config(page_title="Zamówienia", page_icon="📦", layout="wide")
+st.set_page_config(page_title="Hippovet Wyniki", page_icon="🐴", layout="wide")
 
-# --- mapa (opcjonalnie) ---
+# --- Próba importu mapy ---
 try:
     from simple_map import render_simple_map
 except Exception:
     render_simple_map = None
 
 
-# ===== Google Sheets: połączenie =====
+# ===== POŁĄCZENIE Z GOOGLE SHEETS =====
 @st.cache_resource(show_spinner=False)
 def _get_ws():
     try:
@@ -58,32 +59,31 @@ def _get_ws():
         st.error("❌ Brak klucza 'gcp_service_account_json' w Settings → Secrets.")
         st.stop()
     except Exception as e:
-        st.error(f"❌ Nie udało się połączyć z Google Sheets. Szczegóły: {type(e).__name__}: {e}")
+        st.error(f"❌ Błąd połączenia z Google Sheets: {e}")
         st.stop()
 
 
-# ===== ODCZYT (nagłówki w 1. wierszu) =====
+# ===== ODCZYT DANYCH =====
 @st.cache_data(show_spinner=False)
 def load_df() -> pd.DataFrame:
     ws = _get_ws()
-
     values = ws.get_all_values() or []
     if not values:
         return pd.DataFrame(columns=COLS)
 
-    # usuń puste wiersze z końca
+    # Usuwanie pustych wierszy z końca
     while values and all((c.strip() == "" for c in values[-1])):
         values.pop()
 
     headers = [h.strip() for h in values[0]]
     data_rows = values[1:]
 
-    # wyrównaj długości do liczby nagłówków
+    # Wyrównanie kolumn
     width = len(headers)
     data_rows = [r[:width] + [""] * max(0, width - len(r)) for r in data_rows]
     df0 = pd.DataFrame(data_rows, columns=headers)
 
-    # aliasy (gdyby nagłówki były bez polskich znaków)
+    # Aliasy nazw kolumn (zabezpieczenie przed literówkami w Excelu)
     aliases = {
         "nr zamowienia": "nr zamówienia",
         "nr badania": "nr badania",
@@ -99,26 +99,26 @@ def load_df() -> pd.DataFrame:
     }
     df0 = df0.rename(columns={c: aliases.get(str(c).strip().lower(), str(c).strip()) for c in df0.columns})
 
-    # normalizacja pustych / „none” / „null”
+    # Czyszczenie danych
     df0 = df0.replace(r"^\s*$", pd.NA, regex=True)
     lower = df0.astype(str).apply(lambda s: s.str.strip().str.lower())
     df0 = df0.mask(lower.isin(["none", "null"]))
     df0 = df0.dropna(how="all")
 
-    # dołóż brakujące kolumny i kolejność
+    # Uzupełnienie brakujących kolumn
     for c in COLS:
         if c not in df0.columns:
             df0[c] = pd.NA
     df0 = df0.loc[:, COLS]
 
-    # binaria na 0/1
+    # Konwersja kolumn binarnych (0/1)
     for c in BINARY_COLS:
         df0[c] = pd.to_numeric(df0[c], errors="coerce").fillna(0).astype(int)
 
     return df0
 
 
-# ===== ZAPIS =====
+# ===== ZAPIS DANYCH =====
 def save_df(df: pd.DataFrame) -> None:
     ws = _get_ws()
     out = df.copy()
@@ -137,85 +137,188 @@ def save_df(df: pd.DataFrame) -> None:
     st.cache_data.clear()
 
 
-# ===== UI =====
-st.title("📦 Podgląd i dodawanie zamówień")
+# ==========================================
+# ===== WIDOK PUBLICZNY (Dla Klienta) =====
+# ==========================================
+def render_public_view(df: pd.DataFrame):
+    st.title("🐴 Hippovet - Wyniki Badań")
 
-# Sidebar
-with st.sidebar:
-    st.header("🔎 Wyszukiwanie")
+    # 1. Mapy w zakładkach
+    st.subheader("🗺️ Mapy występowania")
+    tab1, tab2, tab3 = st.tabs(["Pasożyty (Konie)", "Bydło (Plan)", "Mapa zbiorcza (Plan)"])
 
-    # wybór pola do wyszukiwania
-    search_field = st.radio(
-        "Szukaj wg:",
-        ["nr zamówienia", "nr badania"],
-        horizontal=True,
-        key="search_field",
-    )
+    with tab1:
+        if render_simple_map:
+            try:
+                render_simple_map(df)
+            except Exception as e:
+                st.error(f"Błąd mapy: {e}")
+        else:
+            st.info("Moduł mapy niedostępny.")
 
-    placeholder = "np. 12345" if search_field == "nr zamówienia" else "np. 733"
-    q = st.text_input(f"{search_field} (część lub całość)", placeholder=placeholder, key="search_q")
+    with tab2:
+        st.info("🚧 Tutaj w przyszłości pojawi się mapa z występowaniem bydła.")
 
-    szukaj = st.button("Szukaj", use_container_width=True)
+    with tab3:
+        st.info("🚧 Tutaj w przyszłości pojawi się nakładka obu map.")
 
     st.divider()
-    st.header("🗑️ Usuń rekord")
-    # formularz usunięcia uruchomimy po wczytaniu df (poniżej)
 
-# wczytaj dane
+    # 2. Wyszukiwarka (Ukrywamy nr zamówienia)
+    st.subheader("🔎 Sprawdź wynik badania")
+    
+    # Kopia danych bez wrażliwej kolumny "nr zamówienia"
+    public_cols = [c for c in COLS if c != "nr zamówienia"]
+    df_public = df[public_cols].copy()
+
+    q = st.text_input("Podaj numer badania:", placeholder="np. 26-02")
+    
+    if q:
+        # Wyszukiwanie częściowe (np. wpisanie "26-02" znajdzie "26-02/BP04")
+        mask = df_public["nr badania"].astype(str).str.contains(q.strip(), case=False, na=False)
+        res = df_public.loc[mask]
+        
+        if len(res) > 0:
+            st.success(f"Znaleziono {len(res)} wynik(ów).")
+            st.dataframe(res, use_container_width=True)
+        else:
+            st.warning("Nie znaleziono badania o takim numerze.")
+    else:
+        # Tabela zbiorcza (bez nr zamówienia)
+        st.write("Ostatnie wyniki:")
+        st.dataframe(df_public, use_container_width=True)
+
+
+# ==========================================
+# ===== WIDOK ADMINA (Pełny dostęp) =====
+# ==========================================
+def render_admin_view(df: pd.DataFrame):
+    st.title("🛠️ Panel Administratora")
+    st.success("Jesteś w trybie edycji (pełny dostęp).")
+
+    # Narzędzia w pasku bocznym
+    with st.sidebar:
+        st.markdown("---")
+        st.write("### 🗑️ Usuwanie")
+        df, deleted = render_delete_form(df, save_df) 
+    
+    # Auto-uzupełnianie powiatów (działa w tle)
+    df_before = df.copy()
+    df_after, _, used_col = fill_powiat_auto(
+        df, powiat_col="Powiat", kod_candidates=("Kod-pocztowy", "Kod-pocztowy ")
+    )
+    # Sprawdź czy coś się zmieniło
+    try:
+        new_filled = (df_before["Powiat"].isna() & df_after["Powiat"].notna()).sum()
+    except KeyError:
+        new_filled = 0
+    
+    df = df_after
+    if new_filled > 0:
+        save_df(df)
+        st.toast(f"ℹ️ Automat uzupełnił powiaty w {new_filled} wierszach.")
+
+    # Mapa (taka sama jak publiczna, ale dostępna dla admina)
+    with st.expander("🗺️ Pokaż mapę", expanded=False):
+        if render_simple_map:
+            render_simple_map(df)
+
+    st.subheader("📑 Pełna baza danych (z nr zamówienia)")
+    
+    # Wyszukiwarka Admina (Pełna)
+    c1, c2 = st.columns([1, 2])
+    with c1:
+        search_field = st.selectbox("Szukaj po:", ["nr zamówienia", "nr badania"])
+    with c2:
+        q_admin = st.text_input("Szukana fraza...", key="admin_q")
+    
+    # Upewnienie się co do kolumn
+    for col in COLS:
+        if col not in df.columns:
+            df[col] = pd.NA
+    df = df.loc[:, COLS]
+
+    if q_admin:
+        mask = df[search_field].astype(str).str.contains(q_admin.strip(), case=False, na=False)
+        res = df.loc[mask]
+        st.dataframe(res, use_container_width=True)
+    else:
+        st.dataframe(df, use_container_width=True, height=400)
+
+    st.divider()
+    
+    # Formularze Dodawania i Edycji
+    col_add, col_edit = st.columns(2)
+    
+    with col_add:
+        st.subheader("➕ Dodaj rekord")
+        df, added = render_add_form(df, save_df, COLS)
+    
+    with col_edit:
+        st.subheader("✏️ Edytuj rekord")
+        df, edited = render_edit_form(df, save_df, COLS)
+
+    # Odświeżenie strony po zmianach
+    if any([added, edited, deleted]):
+        st.rerun()
+
+
+# ==========================================
+# ===== LOGIKA GŁÓWNA (START APLIKACJI) =====
+# ==========================================
+
+# 1. Inicjalizacja "pamięci" aplikacji (session_state)
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False      # Czy użytkownik jest zalogowany?
+if "show_login_form" not in st.session_state:
+    st.session_state["show_login_form"] = False # Czy pokazać okienko logowania?
+
+# 2. Wczytanie danych
 df = load_df()
 
+# 3. Pasek Boczny (Sidebar) - Obsługa Logowania
 with st.sidebar:
-    df, deleted = render_delete_form(df, save_df)
-
-# ===== auto-uzupełnianie powiatu (idempotentnie) =====
-df_before = df.copy()
-df_after, _, used_col = fill_powiat_auto(
-    df, powiat_col="Powiat", kod_candidates=("Kod-pocztowy", "Kod-pocztowy ")
-)
-# policz tylko NOWE uzupełnienia (NaN -> wartość)
-try:
-    new_filled = (df_before["Powiat"].isna() & df_after["Powiat"].notna()).sum()
-except KeyError:
-    new_filled = 0
-
-df = df_after
-if new_filled > 0:
-    save_df(df)
-    st.info(f"ℹ️ Uzupełniono 'Powiat' w {new_filled} wierszach (źródło: {used_col}).")
-
-# ===== tabela =====
-st.subheader("📑 Wszystkie dane")
-for col in COLS:
-    if col not in df.columns:
-        df[col] = pd.NA
-df = df.loc[:, COLS]
-
-if q and szukaj:
-    col = search_field  # "nr zamówienia" albo "nr badania"
-    mask = df[col].astype(str).str.contains(q.strip(), case=False, na=False)
-    res = df.loc[mask].copy()
-    if len(res) == 0:
-        st.info("Brak wyników.")
+    st.image("https://placehold.co/200x100?text=HIPPOVET", use_container_width=True)
+    
+    # Sytuacja A: Użytkownik jest już zalogowany
+    if st.session_state["logged_in"]:
+        st.success("Zalogowano jako Admin")
+        if st.button("Wyloguj", use_container_width=True):
+            st.session_state["logged_in"] = False
+            st.session_state["show_login_form"] = False
+            st.rerun()
+            
+    # Sytuacja B: Użytkownik niezalogowany
     else:
-        st.success(f"Znaleziono {len(res)} rekord(y).")
-        st.dataframe(res, use_container_width=True, height=420)
+        # Jeśli NIE kliknięto jeszcze "Administracja" -> pokaż przycisk
+        if not st.session_state["show_login_form"]:
+            st.write("") # odstęp
+            if st.button("🔐 Administracja", use_container_width=True):
+                st.session_state["show_login_form"] = True
+                st.rerun()
+        
+        # Jeśli kliknięto -> pokaż formularz z hasłem i krzyżykiem
+        else:
+            st.markdown("---")
+            st.markdown("##### Logowanie")
+            password = st.text_input("Hasło:", type="password", key="login_pass")
+            
+            col_ok, col_x = st.columns([1, 1])
+            with col_ok:
+                if st.button("Zaloguj", use_container_width=True):
+                    if password == "123":
+                        st.session_state["logged_in"] = True
+                        st.session_state["show_login_form"] = False
+                        st.rerun()
+                    else:
+                        st.error("Błąd!")
+            with col_x:
+                if st.button("❌", use_container_width=True):
+                    st.session_state["show_login_form"] = False
+                    st.rerun()
+
+# 4. Wyświetlenie odpowiedniego widoku
+if st.session_state["logged_in"]:
+    render_admin_view(df)
 else:
-    st.dataframe(df, use_container_width=True, height=420)
-
-# ===== mapa (jeśli moduł jest dostępny) =====
-st.subheader("")
-if render_simple_map is None:
-    st.info("Mapa niedostępna (brak modułu simple_map lub zależności).")
-else:
-    try:
-        render_simple_map(df)
-    except Exception as e:
-        st.error(f"Nie udało się narysować mapy: {type(e).__name__}: {e}")
-
-# ===== formularze (dodawanie/edycja) =====
-df, added = render_add_form(df, save_df, COLS)
-df, edited = render_edit_form(df, save_df, COLS)
-
-# odśwież po modyfikacjach
-if any([added, edited, deleted]):
-    st.rerun()
+    render_public_view(df)
