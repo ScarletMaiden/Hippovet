@@ -44,43 +44,103 @@ except Exception:
 
 # ===== FUNKCJA POMOCNICZA: SZUKANIE LOGA =====
 def get_logo_path():
-    """Szuka pliku z logiem na serwerze"""
-    possible_names = [
+    """Szuka pliku z logiem na serwerze (ignoruje wielkość liter)"""
+    targets = [
         "612_124_hippovet_logo_poziom_1500px.png",
-        "logo.png", "Logo.png", "LOGO.png",
-        "logo.jpg", "Logo.jpg", "Hippovet.png"
+        "logo.png", "logo.jpg", "hippovet.png"
     ]
-    for name in possible_names:
-        if os.path.exists(name):
-            return name
+    files_on_server = os.listdir(".")
+    for target in targets:
+        for file in files_on_server:
+            if file.lower() == target.lower():
+                return file
     return None
+
+
+# ===== STYLIZACJA (CSS) =====
+# Tutaj zmieniamy wygląd paska bocznego i stopki
+def inject_custom_css():
+    st.markdown("""
+    <style>
+        /* 1. ZMIANA WYGLĄDU SIDEBARA (PASKA BOCZNEGO) */
+        [data-testid="stSidebar"] {
+            background-color: #ffffff; /* Białe tło paska */
+            border-right: 1px solid #f0f0f0; /* Delikatna linia oddzielająca */
+        }
+        
+        /* Ukrycie uchwytu do zmiany rozmiaru paska (dla czystszego wyglądu) */
+        [data-testid="stSidebarNav"] {
+            display: none;
+        }
+        
+        /* Ładniejsze przyciski w sidebarze */
+        .stButton button {
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        /* 2. STOPKA */
+        footer {visibility: hidden;} /* Ukrycie "Made with Streamlit" */
+        
+        .safe-footer {
+            width: 100%;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            padding: 40px 20px;
+            color: #495057;
+            font-family: sans-serif;
+            font-size: 14px;
+            margin-top: 80px;
+            border-radius: 10px;
+        }
+        
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .footer-column {
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        .footer-right {
+            text-align: right;
+        }
+        
+        @media (max-width: 700px) {
+            .footer-right { text-align: left; margin-top: 20px; }
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
 
 # ===== FUNKCJA STOPKI (FOOTER) =====
 def render_footer():
     st.markdown("""
-    <style>
-    .footer {
-        position: fixed;
-        left: 0;
-        bottom: 0;
-        width: 100%;
-        background-color: white;
-        color: #888;
-        text-align: center;
-        padding: 10px;
-        font-size: 12px;
-        border-top: 1px solid #eee;
-        z-index: 1000;
-    }
-    footer {visibility: hidden;}
-    </style>
-    
-    <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #888; font-size: 13px;">
-        <p>
-            &copy; 2025 <b>Hippovet</b>. Wszelkie prawa zastrzeżone.<br>
-            Dbamy o zdrowie Twoich koni 🐴
-        </p>
+    <div class="safe-footer">
+        <div class="footer-content">
+            <div class="footer-column">
+                <strong style="color: #212529;">HippoVet+ dr Krzysztof Marycz</strong><br>
+                <strong style="color: #212529;">JKI Innovation Julia Kaczmarczyk</strong><br>
+                <div style="margin-top: 10px; line-height: 1.6;">
+                    ul. Jesionowa 11<br>
+                    51-114 Malin
+                </div>
+                <div style="margin-top: 10px; font-size: 13px; color: #6c757d;">
+                    NIP: 9442115437 | REGON: 387433495
+                </div>
+            </div>
+            
+            <div class="footer-column footer-right">
+                <h4 style="margin: 0; color: #212529;">🐴 Hippovet</h4>
+                <p style="margin: 5px 0 0 0; color: #6c757d;">Centrum Wyników Badań</p>
+                <br>
+                <small>&copy; 2025 Wszelkie prawa zastrzeżone.</small>
+            </div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -180,31 +240,28 @@ def save_df(df: pd.DataFrame) -> None:
 # ==========================================
 def render_public_view(df: pd.DataFrame):
     
-    # === PROFESJONALNY NAGŁÓWEK Z TŁEM ===
-    # Używamy CSS, żeby dodać tło (zdjęcie) i nałożyć na nie białą, półprzezroczystą warstwę (efekt mleczny)
+    # === PROFESJONALNY NAGŁÓWEK Z TŁEM (MLECZNE SZKŁO) ===
     st.markdown("""
         <div style='
             text-align: center;
             padding: 40px 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            /* Tu dzieje się magia: najpierw biały gradient (mleko), pod spodem zdjęcie */
-            background-image:
-                linear-gradient(to bottom, rgba(255,255,255,0.85), rgba(255,255,255,0.85)),
-                url("https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D");
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), 
+                        url("https://images.unsplash.com/photo-1534008139268-2b81d835150e?auto=format&fit=crop&w=1000&q=80");
             background-size: cover;
             background-position: center;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
+            border: 1px solid #eee;
         '>
-            <h1 style='font-size: 3rem; margin-bottom: 5px; color: #222; text-shadow: 1px 1px 2px rgba(255,255,255,0.8);'>🐴 Hippovet</h1>
-            <h3 style='color: #444; font-weight: 400; margin-top: 0; letter-spacing: 1px;'>Centrum Wyników Badań</h3>
-            <p style='color: #555; font-size: 1.1rem; margin-top: 15px; max-width: 700px; margin-left: auto; margin-right: auto;'>
+            <h1 style='font-size: 2.8rem; margin-bottom: 5px; color: #111; letter-spacing: -1px;'>🐴 Hippovet</h1>
+            <h3 style='color: #444; font-weight: 400; text-transform: uppercase; font-size: 1.1rem; letter-spacing: 2px; margin-top: 0;'>Centrum Wyników Badań</h3>
+            <div style='width: 50px; height: 3px; background: #e74c3c; margin: 20px auto;'></div>
+            <p style='color: #555; font-size: 1.1rem; font-style: italic;'>
                 Profesjonalna diagnostyka parazytologiczna dla zdrowia Twojego konia
             </p>
         </div>
     """, unsafe_allow_html=True)
-        
-    # st.write("---") # Usunąłem linię, bo nowy nagłówek ma już ładny odstęp
 
     if "selected_map_view" not in st.session_state:
         st.session_state["selected_map_view"] = "konie"
@@ -212,7 +269,6 @@ def render_public_view(df: pd.DataFrame):
     st.markdown("<h3 style='text-align: center;'>🗺️ Wybierz mapę występowania</h3>", unsafe_allow_html=True)
     st.write("") 
 
-    # Przyciski
     c1, c2, c3 = st.columns(3)
     
     with c1:
@@ -349,6 +405,8 @@ def render_admin_view(df: pd.DataFrame):
 # ==========================================
 # ===== LOGIKA GŁÓWNA =====
 # ==========================================
+# 1. Wstrzyknięcie CSS (Stylu)
+inject_custom_css()
 
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False      
@@ -357,48 +415,56 @@ if "show_login_form" not in st.session_state:
 
 df = load_df()
 
-# --- SIDEBAR (Pasek boczny) ---
+# --- SIDEBAR (Pasek boczny) - TERAZ ŁADNIEJSZY ---
 with st.sidebar:
     
-    # Logo w sidebarze
+    # Wyśrodkowane Logo (lub placeholder)
     logo_file = get_logo_path()
     if logo_file:
         st.image(logo_file, use_container_width=True)
     else:
         st.image("https://placehold.co/200x100?text=HIPPOVET", use_container_width=True)
-
     
+    st.write("") # Odstęp
+
+    # Obsługa logowania w ładnym kontenerze (Ramka)
     if st.session_state["logged_in"]:
-        st.success("Zalogowano: Admin")
-        if st.button("Wyloguj", use_container_width=True):
-            st.session_state["logged_in"] = False
-            st.session_state["show_login_form"] = False
-            st.rerun()
+        with st.container(border=True):
+            st.success("✅ Zalogowano: Admin")
+            if st.button("Wyloguj", use_container_width=True):
+                st.session_state["logged_in"] = False
+                st.session_state["show_login_form"] = False
+                st.rerun()
             
     else:
+        # Jeśli nie kliknięto "Administracja"
         if not st.session_state["show_login_form"]:
-            st.write("") 
-            if st.button("🔐 Administracja", use_container_width=True):
+            st.write("")
+            # Używamy st.columns żeby wyśrodkować przycisk
+            # (To mały trik wizualny)
+            st.markdown("---")
+            if st.button("🔐 Panel Administracyjny", use_container_width=True):
                 st.session_state["show_login_form"] = True
                 st.rerun()
         else:
-            st.markdown("---")
-            st.markdown("##### Logowanie")
-            password = st.text_input("Hasło:", type="password", key="login_pass")
-            
-            col_ok, col_x = st.columns([1, 1])
-            with col_ok:
-                if st.button("Zaloguj", use_container_width=True):
-                    if password == "123":
-                        st.session_state["logged_in"] = True
+            # FORMULARZ LOGOWANIA W RAMCE
+            with st.container(border=True):
+                st.markdown("**Logowanie do panelu**")
+                password = st.text_input("Hasło:", type="password", key="login_pass")
+                
+                col_ok, col_x = st.columns([2, 1])
+                with col_ok:
+                    if st.button("Zaloguj", use_container_width=True, type="primary"):
+                        if password == "123":
+                            st.session_state["logged_in"] = True
+                            st.session_state["show_login_form"] = False
+                            st.rerun()
+                        else:
+                            st.error("Błąd!")
+                with col_x:
+                    if st.button("❌", use_container_width=True):
                         st.session_state["show_login_form"] = False
                         st.rerun()
-                    else:
-                        st.error("Błąd!")
-            with col_x:
-                if st.button("❌", use_container_width=True):
-                    st.session_state["show_login_form"] = False
-                    st.rerun()
 
 # Wyświetlenie treści
 if st.session_state["logged_in"]:
@@ -406,5 +472,5 @@ if st.session_state["logged_in"]:
 else:
     render_public_view(df)
 
-# STOPKA
+# STOPKA (Zawsze na samym dole)
 render_footer()
