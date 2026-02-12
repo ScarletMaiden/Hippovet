@@ -86,29 +86,31 @@ def inject_custom_css():
     
 
 # ===== FUNKCJA STOPKI (FOOTER) =====
+import base64
+
 def render_footer():
-    # 1. Tworzymy wyraźny odstęp od reszty treści
+    # 1. Tworzymy linię oddzielającą
     st.write("---")
     
-    # 2. Tworzymy dwie kolumny: lewa na logo, prawa na dane
-    # Ustawiamy proporcje 1:4, żeby logo było malutkie
+    # 2. Układamy logo i tekst obok siebie (kolumny Streamlit)
     col1, col2 = st.columns([1, 4])
     
     with col1:
-        # Wyświetlamy malutkie logo za pomocą standardowej funkcji Streamlit
-        st.image("https://raw.githubusercontent.com/ScarletMaiden/Hippovet/testy-nowego-wygladu/612_124_hippovet_logo_poziom_1500px.png", width=100)
+        # Wyświetlamy logo bezpośrednio z pliku, który wgrałaś
+        try:
+            st.image("612_124_hippovet_logo_poziom_1500px.png", width=120)
+        except:
+            # Awaryjnie, jeśli GitHub jeszcze nie przetworzył pliku
+            st.markdown("🐴 **HIPPOVET**")
     
     with col2:
-        # Wyświetlamy dane tekstowe w najprostszy możliwy sposób
-        st.markdown(
-            """
-            **HippoVet+ dr Krzysztof Marycz** **JKI Innovation Julia Kaczmarczyk** ul. Jesionowa 11  
-            51-114 Malin  
-            NIP: 9442115437, REGON: 387433495
-            """
-        )
+        # Dane tekstowe bez żadnego skomplikowanego kodu HTML
+        st.markdown("""
+        **HippoVet+ dr Krzysztof Marycz** **JKI Innovation Julia Kaczmarczyk** ul. Jesionowa 11, 51-114 Malin  
+        NIP: 9442115437, REGON: 387433495
+        """)
 
-    # 3. Ukrywamy napisy Streamlit na samym dole
+    # 3. Ukrywamy techniczne napisy Streamlit
     st.markdown("<style>footer {visibility: hidden;}</style>", unsafe_allow_html=True)
 # ===== POŁĄCZENIE Z GOOGLE SHEETS =====
 @st.cache_resource(show_spinner=False)
@@ -436,6 +438,7 @@ else:
 
 # STOPKA
 render_footer()
+
 
 
 
