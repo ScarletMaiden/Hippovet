@@ -81,7 +81,7 @@ def render_simple_map(df: pd.DataFrame):
         lon="longitude",
         size="size",
         color="cases",
-        color_continuous_scale="Reds", 
+        color_continuous_scale="Magma", 
         hover_name="Powiat",
         hover_data={"cases": True},
         zoom=5,
@@ -102,6 +102,7 @@ def render_simple_map(df: pd.DataFrame):
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
 
 
 
