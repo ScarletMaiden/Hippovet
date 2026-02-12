@@ -44,88 +44,44 @@ except Exception:
 
 # ===== FUNKCJA POMOCNICZA: SZUKANIE LOGA =====
 def get_logo_path():
-    """Szuka pliku z logiem na serwerze (ignoruje wielkość liter)"""
-    # Lista nazw, których szukamy
-    targets = [
-        "612_124_hippovet_logo_poziom_1500px.png",
-        "logo.png", "logo.jpg", "hippovet.png"
+    """Szuka pliku z logiem na serwerze"""
+    # Tutaj wpisujemy możliwe nazwy Twojego pliku
+    possible_names = [
+        "612_124_hippovet_logo_poziom_1500px.png",  # <--- TWOJA NAZWA (Najważniejsza)
+        "logo.png", "Logo.png", "LOGO.png",
+        "logo.jpg", "Logo.jpg", "Hippovet.png"
     ]
-    
-    # Pobieramy listę wszystkich plików w folderze
-    files_on_server = os.listdir(".")
-    
-    # Sprawdzamy czy któryś z naszych celów istnieje (ignorując wielkość liter)
-    for target in targets:
-        for file in files_on_server:
-            if file.lower() == target.lower():
-                return file
+    for name in possible_names:
+        if os.path.exists(name):
+            return name
     return None
 
 
-# ===== FUNKCJA STOPKI (FOOTER) - WERSJA BEZPIECZNA (STATIC) =====
+# ===== FUNKCJA STOPKI (FOOTER) =====
 def render_footer():
     st.markdown("""
     <style>
-    /* Ukrywamy domyślną stopkę "Made with Streamlit" */
-    footer {visibility: hidden;}
-    
-    .safe-footer {
+    .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
         width: 100%;
-        background-color: #f8f9fa;
-        border-top: 1px solid #e9ecef;
-        padding: 40px 20px;
-        color: #495057;
-        font-family: sans-serif;
-        font-size: 14px;
-        margin-top: 80px; /* Duży odstęp od tabeli */
-        border-radius: 10px;
+        background-color: white;
+        color: #888;
+        text-align: center;
+        padding: 10px;
+        font-size: 12px;
+        border-top: 1px solid #eee;
+        z-index: 1000;
     }
-    
-    .footer-content {
-        display: flex;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 20px;
-    }
-    
-    .footer-column {
-        flex: 1;
-        min-width: 250px;
-    }
-    
-    .footer-right {
-        text-align: right;
-    }
-    
-    /* Na telefonach wszystko centrujemy */
-    @media (max-width: 700px) {
-        .footer-right { text-align: left; margin-top: 20px; }
-    }
+    footer {visibility: hidden;}
     </style>
     
-    <div class="safe-footer">
-        <div class="footer-content">
-            
-            <div class="footer-column">
-                <strong style="color: #212529;">HippoVet+ dr Krzysztof Marycz</strong><br>
-                <strong style="color: #212529;">JKI Innovation Julia Kaczmarczyk</strong><br>
-                <div style="margin-top: 10px; line-height: 1.6;">
-                    ul. Jesionowa 11<br>
-                    51-114 Malin
-                </div>
-                <div style="margin-top: 10px; font-size: 13px; color: #6c757d;">
-                    NIP: 9442115437 | REGON: 387433495
-                </div>
-            </div>
-            
-            <div class="footer-column footer-right">
-                <h4 style="margin: 0; color: #212529;">🐴 Hippovet</h4>
-                <p style="margin: 5px 0 0 0; color: #6c757d;">Centrum Wyników Badań</p>
-                <br>
-                <small>&copy; 2025 Wszelkie prawa zastrzeżone.</small>
-            </div>
-            
-        </div>
+    <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #888; font-size: 13px;">
+        <p>
+            &copy; 2025 <b>Hippovet</b>. Wszelkie prawa zastrzeżone.<br>
+            Dbamy o zdrowie Twoich koni 🐴
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -225,29 +181,20 @@ def save_df(df: pd.DataFrame) -> None:
 # ==========================================
 def render_public_view(df: pd.DataFrame):
     
-    # === PROFESJONALNY NAGŁÓWEK Z TŁEM (MLECZNE SZKŁO) ===
-    st.markdown("""
-        <div style='
-            text-align: center;
-            padding: 40px 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            /* TŁO: Zdjęcie przykryte półprzezroczystą bielą */
-            background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), 
-                        url("https://images.unsplash.com/photo-1534008139268-2b81d835150e?auto=format&fit=crop&w=1000&q=80");
-            background-size: cover;
-            background-position: center;
-            margin-bottom: 40px;
-            border: 1px solid #eee;
-        '>
-            <h1 style='font-size: 2.8rem; margin-bottom: 5px; color: #111; letter-spacing: -1px;'>🐴 Hippovet</h1>
-            <h3 style='color: #444; font-weight: 400; text-transform: uppercase; font-size: 1.1rem; letter-spacing: 2px; margin-top: 0;'>Centrum Wyników Badań</h3>
-            <div style='width: 50px; height: 3px; background: #e74c3c; margin: 20px auto;'></div>
-            <p style='color: #555; font-size: 1.1rem; font-style: italic;'>
-                Profesjonalna diagnostyka parazytologiczna dla zdrowia Twojego konia
-            </p>
-        </div>
-    """, unsafe_allow_html=True)
+    # === INTELIGENTNE LOGO ===
+    logo_file = get_logo_path()
+    
+    if logo_file:
+        # width=500 - dopasuj jeśli logo jest za duże/za małe
+        st.image(logo_file, width=500) 
+    else:
+        st.title("🐴 Hippovet - Wyniki Badań")
+        # Diagnostyka (pokaż tylko jeśli plik nie został wykryty)
+        with st.expander("⚠️ Debugowanie loga"):
+            st.warning(f"Nie znaleziono pliku. Szukałem m.in: '612_124_hippovet_logo_poziom_1500px.png'")
+            st.write("Pliki na serwerze:", os.listdir("."))
+
+    st.write("---")
 
     if "selected_map_view" not in st.session_state:
         st.session_state["selected_map_view"] = "konie"
@@ -403,11 +350,11 @@ df = load_df()
 # --- SIDEBAR (Pasek boczny) ---
 with st.sidebar:
     
+    # Logo w sidebarze
     logo_file = get_logo_path()
     if logo_file:
         st.image(logo_file, use_container_width=True)
     else:
-        # Fallback jeśli brak pliku
         st.image("https://placehold.co/200x100?text=HIPPOVET", use_container_width=True)
 
     
@@ -449,5 +396,5 @@ if st.session_state["logged_in"]:
 else:
     render_public_view(df)
 
-# STOPKA (Zawsze na samym dole)
+# STOPKA
 render_footer()
