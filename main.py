@@ -61,51 +61,26 @@ def get_logo_path():
 def inject_custom_css():
     st.markdown("""
     <style>
-        /* 1. SIDEBAR (PASEK BOCZNY) */
+        /* 1. SIDEBAR (PASEK BOCZNY) - ZWĘŻENIE */
         [data-testid="stSidebar"] {
             background-color: #ffffff;
             border-right: 1px solid #f0f0f0;
+            min-width: 200px !important; /* Tu ustawiasz minimalną szerokość */
+            max-width: 200px !important; /* Tu ustawiasz maksymalną szerokość */
+            width: 200px !important;
         }
         
-        /* Ukrycie uchwytu zmiany rozmiaru */
+        /* Dostosowanie głównej treści, aby nie było dziury po zwężeniu paska */
+        [data-testid="stSidebarCollapsedControl"] {
+            left: 20px;
+        }
+
+        /* Ukrycie domyślnego przycisku nawigacji, jeśli jeszcze tam jest */
         [data-testid="stSidebarNav"] {
             display: none;
         }
         
-        /* 2. STOPKA */
-        footer {visibility: hidden;}
-        
-        .safe-footer {
-            width: 100%;
-            background-color: #f8f9fa;
-            border-top: 1px solid #e9ecef;
-            padding: 40px 20px;
-            color: #495057;
-            font-family: sans-serif;
-            font-size: 14px;
-            margin-top: 80px;
-            border-radius: 10px;
-        }
-        
-        .footer-content {
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        
-        .footer-column {
-            flex: 1;
-            min-width: 250px;
-        }
-        
-        .footer-right {
-            text-align: right;
-        }
-        
-        @media (max-width: 700px) {
-            .footer-right { text-align: left; margin-top: 20px; }
-        }
+        /* ... reszta Twoich stylów (stopka, przyciski itp.) ... */
     </style>
     """, unsafe_allow_html=True)
 
@@ -464,3 +439,4 @@ else:
 
 # STOPKA
 render_footer()
+
