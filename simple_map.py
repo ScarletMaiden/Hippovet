@@ -1,7 +1,7 @@
 import re
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go  # Dodajemy to do obsługi żółtych kropek
+import plotly.graph_objects as go
 import streamlit as st
 import pgeocode
 
@@ -30,18 +30,19 @@ def _postal_to_coords(series: pd.Series) -> pd.DataFrame:
     return out.dropna(subset=["latitude", "longitude"]).drop_duplicates(subset=["code_norm"])
 
 def render_simple_map(df: pd.DataFrame):
-    # Wybór pasożyta (bez zmian)
     parasite_cols = ["Anoplocephala perfoliata", "Oxyuris equi", "Parascaris equorum", "Strongyloides spp"]
     
-    # Tworzymy kolumny (3 obok siebie) dla lepszego wyglądu selectboxa
-    c1, c2 = st.columns([1, 3])
-    with c1:
-        st.write("") # Pusty odstęp, żeby wyrównać z nagłówkiem
-        st.markdown("**Wybierz pasożyta:**")
-    with c2:
-        parasite = st.selectbox("", parasite_cols, index=0, label_visibility="collapsed")
+    # 1. Wybór pasożyta i Przełącznik widoczności zer
+    col_sel, col_toggle = st.columns([2, 2])
+    
+    with col_sel:
+        parasite = st.selectbox("Wybierz pasożyta:", parasite_cols, index=0)
+        
+    with col_toggle:
+        st.write("") 
+        st.write("") 
+        show_zeros = st.toggle("🟡 Pokaż wyniki ujemne (0)", value=True)
 
-    # Sprawdzenie kolumn (bez zmian)
     if "Kod-pocztowy" not in df.columns:
         st.info("Brak kolumny 'Kod-pocztowy' – mapa niedostępna.")
         return
@@ -54,7 +55,6 @@ def render_simple_map(df: pd.DataFrame):
     dtmp[parasite] = pd.to_numeric(dtmp[parasite], errors="coerce").fillna(0).astype(int)
     dtmp["code_norm"] = dtmp["Kod-pocztowy"].map(_norm_code)
     
-    # Pobranie współrzędnych
     coords = _postal_to_coords(dtmp["code_norm"])
     if coords.empty:
         st.info("Brak współrzędnych dla kodów pocztowych.")
@@ -68,7 +68,7 @@ def render_simple_map(df: pd.DataFrame):
         st.info("Brak danych do pokazania na mapie.")
         return
 
-    # Agregacja po powiecie
+    # Agregacja
     agg = (
         m.groupby("Powiat", dropna=True)
          .agg(cases=(parasite, "sum"),
@@ -81,21 +81,17 @@ def render_simple_map(df: pd.DataFrame):
         st.info("Brak danych.")
         return
 
-    # === TUTAJ ZMIANA: DZIELIMY DANE NA DWA ZBIORY ===
-    
-    # 1. Zbiór pozytywny (tam gdzie są przypadki > 0)
+    # Podział na >0 i ==0
     df_pos = agg[agg["cases"] > 0].copy()
-    df_pos["size"] = df_pos["cases"].clip(lower=1) # Rozmiar kropki zależny od liczby przypadków
-
-    # 2. Zbiór zerowy (tam gdzie cases == 0)
+    df_pos["size"] = df_pos["cases"].clip(lower=1)
+    
     df_zero = agg[agg["cases"] == 0].copy()
     
-    # Ustalmy max_cases do skali kolorów
     max_cases = int(df_pos["cases"].max()) if not df_pos.empty else 0
 
-    # === RYSOWANIE ===
+    # === RYSOWANIE MAPY ===
     
-    # KROK 1: Rysujemy mapę bazową dla wyników pozytywnych (czerwona skala)
+    # Warstwa 1: Wyniki pozytywne (Czerwone)
     if not df_pos.empty:
         fig = px.scatter_mapbox(
             df_pos,
@@ -103,59 +99,74 @@ def render_simple_map(df: pd.DataFrame):
             lon="longitude",
             size="size",
             color="cases",
-            # Zmieniamy skalę na Reds (czerwienie)
-            color_continuous_scale="Reds", 
+            color_continuous_scale="Reds",
             hover_name="Powiat",
             hover_data={"cases": True, "size": False},
             zoom=5,
             height=500,
         )
     else:
-        # Jeśli nie ma żadnych pozytywnych przypadków, tworzymy pustą mapę
         fig = go.Figure(go.Scattermapbox(lat=[], lon=[]))
         fig.update_layout(
             mapbox_style="open-street-map",
             mapbox=dict(center=dict(lat=52.0, lon=19.0), zoom=5),
-            margin=dict(l=0, r=0, t=0, b=0),
             height=500
         )
 
-    # KROK 2: Dokładamy żółte kropki dla wyników zerowych
-    if not df_zero.empty:
+    # Warstwa 2: Wyniki zerowe (Żółte)
+    if show_zeros and not df_zero.empty:
         fig.add_trace(go.Scattermapbox(
             lat=df_zero["latitude"],
             lon=df_zero["longitude"],
             mode='markers',
             marker=go.scattermapbox.Marker(
-                size=9,             # Stały rozmiar dla zer
-                color='gold',       # Kolor ZŁOTY/ŻÓŁTY
+                size=9,
+                color='gold',
                 opacity=0.9
             ),
-            text=df_zero["Powiat"] + ": 0 przypadków", # Co widać po najechaniu
+            text=df_zero["Powiat"] + ": BRAK pasożytów",
             hoverinfo='text',
-            name='0 przypadków'     # Legenda
+            name='Wynik ujemny (0)'
         ))
 
-    # Konfiguracja wyglądu mapy
+    # Wygląd mapy i legendy
     fig.update_layout(
         mapbox_style="open-street-map",
         margin=dict(l=0, r=0, t=0, b=0),
         uirevision="fixed",
+        
         legend=dict(
             yanchor="top",
-            y=0.99,
+            y=0.98,
             xanchor="left",
-            x=0.01,
-            bgcolor="rgba(255,255,255,0.8)"
+            x=0.02,
+            font=dict(
+                family="Arial",
+                size=14,
+                color="black"
+            ),
+            bgcolor="white",
+            bordercolor="gray",
+            borderwidth=1
         )
     )
     
-    # Ustawienia skali kolorów (tylko jeśli są pozytywne wyniki)
+    # Skala kolorów (POPRAWIONA)
     if not df_pos.empty:
         fig.update_coloraxes(
             cmin=0,
             cmax=max_cases if max_cases > 0 else 1,
-            colorbar=dict(title="Liczba<br>przypadków", tick0=0, dtick=1 if max_cases < 10 else None)
+            colorbar=dict(
+                # TU BYŁA ZMIANA: Tytuł jako słownik z polem 'font'
+                title=dict(
+                    text="Liczba<br>przypadków",
+                    font=dict(color="black")
+                ),
+                tickfont=dict(color="black"),
+                bgcolor="rgba(255,255,255,0.8)",
+                tick0=0, 
+                dtick=1 if max_cases < 10 else None
+            )
         )
 
     st.plotly_chart(fig, use_container_width=True)
