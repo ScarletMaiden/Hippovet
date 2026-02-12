@@ -44,88 +44,85 @@ except Exception:
 
 # ===== FUNKCJA POMOCNICZA: SZUKANIE LOGA =====
 def get_logo_path():
-    """Szuka pliku z logiem na serwerze"""
-    possible_names = [
+    """Szuka pliku z logiem na serwerze (ignoruje wielkość liter)"""
+    # Lista nazw, których szukamy
+    targets = [
         "612_124_hippovet_logo_poziom_1500px.png",
-        "logo.png", "Logo.png", "LOGO.png",
-        "logo.jpg", "Logo.jpg", "Hippovet.png"
+        "logo.png", "logo.jpg", "hippovet.png"
     ]
-    for name in possible_names:
-        if os.path.exists(name):
-            return name
+    
+    # Pobieramy listę wszystkich plików w folderze
+    files_on_server = os.listdir(".")
+    
+    # Sprawdzamy czy któryś z naszych celów istnieje (ignorując wielkość liter)
+    for target in targets:
+        for file in files_on_server:
+            if file.lower() == target.lower():
+                return file
     return None
 
 
-# ===== FUNKCJA STOPKI (FOOTER) - WERSJA PRZYKLEJONA (FIXED) =====
+# ===== FUNKCJA STOPKI (FOOTER) - WERSJA BEZPIECZNA (STATIC) =====
 def render_footer():
     st.markdown("""
     <style>
-    /* Ukrywamy domyślną stopkę Streamlit i dodajemy odstęp na dole strony, żeby treść nie wjeżdżała pod stopkę */
+    /* Ukrywamy domyślną stopkę "Made with Streamlit" */
     footer {visibility: hidden;}
-    .block-container {
-        padding-bottom: 150px; /* Miejsce na stopkę */
-    }
     
-    .fixed-footer {
-        position: fixed;
-        left: 0;
-        bottom: 0;
+    .safe-footer {
         width: 100%;
-        background-color: white; /* Białe tło */
-        border-top: 2px solid #f0f2f6; /* Delikatna ramka */
-        color: #666;
-        font-size: 13px;
+        background-color: #f8f9fa;
+        border-top: 1px solid #e9ecef;
+        padding: 40px 20px;
+        color: #495057;
         font-family: sans-serif;
-        z-index: 99999; /* Zawsze na wierzchu */
-        padding: 15px 40px;
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.05); /* Lekki cień */
+        font-size: 14px;
+        margin-top: 80px; /* Duży odstęp od tabeli */
+        border-radius: 10px;
     }
     
     .footer-content {
-        max-width: 1400px;
-        margin: 0 auto;
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
     }
     
-    .footer-left {
-        text-align: left;
+    .footer-column {
+        flex: 1;
+        min-width: 250px;
     }
     
     .footer-right {
         text-align: right;
     }
     
-    /* Na telefonach układamy jedno pod drugim */
-    @media (max-width: 800px) {
-        .footer-content {
-            flex-direction: column;
-            gap: 15px;
-            text-align: center;
-        }
-        .footer-left, .footer-right {
-            text-align: center;
-        }
-        /* Powiększamy padding na dole strony mobilnej */
-        .block-container {
-            padding-bottom: 250px; 
-        }
+    /* Na telefonach wszystko centrujemy */
+    @media (max-width: 700px) {
+        .footer-right { text-align: left; margin-top: 20px; }
     }
     </style>
     
-    <div class="fixed-footer">
+    <div class="safe-footer">
         <div class="footer-content">
             
-            <div class="footer-left">
-                <strong>HippoVet+ dr Krzysztof Marycz</strong> | <strong>JKI Innovation Julia Kaczmarczyk</strong><br>
-                ul. Jesionowa 11, 51-114 Malin<br>
-                NIP: 9442115437 | REGON: 387433495
+            <div class="footer-column">
+                <strong style="color: #212529;">HippoVet+ dr Krzysztof Marycz</strong><br>
+                <strong style="color: #212529;">JKI Innovation Julia Kaczmarczyk</strong><br>
+                <div style="margin-top: 10px; line-height: 1.6;">
+                    ul. Jesionowa 11<br>
+                    51-114 Malin
+                </div>
+                <div style="margin-top: 10px; font-size: 13px; color: #6c757d;">
+                    NIP: 9442115437 | REGON: 387433495
+                </div>
             </div>
             
-            <div class="footer-right">
-                &copy; 2025 <b>Hippovet</b><br>
-                <span style="font-style: italic; color: #999;">Dbamy o zdrowie Twoich koni 🐴</span>
+            <div class="footer-column footer-right">
+                <h4 style="margin: 0; color: #212529;">🐴 Hippovet</h4>
+                <p style="margin: 5px 0 0 0; color: #6c757d;">Centrum Wyników Badań</p>
+                <br>
+                <small>&copy; 2025 Wszelkie prawa zastrzeżone.</small>
             </div>
             
         </div>
@@ -228,23 +225,25 @@ def save_df(df: pd.DataFrame) -> None:
 # ==========================================
 def render_public_view(df: pd.DataFrame):
     
-    # === PROFESJONALNY NAGŁÓWEK Z TŁEM ===
+    # === PROFESJONALNY NAGŁÓWEK Z TŁEM (MLECZNE SZKŁO) ===
     st.markdown("""
         <div style='
             text-align: center;
             padding: 40px 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            background-image:
-                linear-gradient(to bottom, rgba(255,255,255,0.85), rgba(255,255,255,0.85)),
-                url("https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?q=80&w=1471&auto=format&fit=crop");
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            /* TŁO: Zdjęcie przykryte półprzezroczystą bielą */
+            background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), 
+                        url("https://images.unsplash.com/photo-1534008139268-2b81d835150e?auto=format&fit=crop&w=1000&q=80");
             background-size: cover;
             background-position: center;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
+            border: 1px solid #eee;
         '>
-            <h1 style='font-size: 3rem; margin-bottom: 5px; color: #222; text-shadow: 1px 1px 2px rgba(255,255,255,0.8);'>🐴 Hippovet</h1>
-            <h3 style='color: #444; font-weight: 400; margin-top: 0; letter-spacing: 1px;'>Centrum Wyników Badań</h3>
-            <p style='color: #555; font-size: 1.1rem; margin-top: 15px; max-width: 700px; margin-left: auto; margin-right: auto;'>
+            <h1 style='font-size: 2.8rem; margin-bottom: 5px; color: #111; letter-spacing: -1px;'>🐴 Hippovet</h1>
+            <h3 style='color: #444; font-weight: 400; text-transform: uppercase; font-size: 1.1rem; letter-spacing: 2px; margin-top: 0;'>Centrum Wyników Badań</h3>
+            <div style='width: 50px; height: 3px; background: #e74c3c; margin: 20px auto;'></div>
+            <p style='color: #555; font-size: 1.1rem; font-style: italic;'>
                 Profesjonalna diagnostyka parazytologiczna dla zdrowia Twojego konia
             </p>
         </div>
@@ -408,6 +407,7 @@ with st.sidebar:
     if logo_file:
         st.image(logo_file, use_container_width=True)
     else:
+        # Fallback jeśli brak pliku
         st.image("https://placehold.co/200x100?text=HIPPOVET", use_container_width=True)
 
     
@@ -449,5 +449,5 @@ if st.session_state["logged_in"]:
 else:
     render_public_view(df)
 
-# STOPKA
+# STOPKA (Zawsze na samym dole)
 render_footer()
