@@ -42,6 +42,21 @@ except Exception:
     render_simple_map = None
 
 
+# ===== FUNKCJA POMOCNICZA: SZUKANIE LOGA =====
+def get_logo_path():
+    """Szuka pliku z logiem na serwerze"""
+    # Tutaj wpisujemy możliwe nazwy Twojego pliku
+    possible_names = [
+        "612_124_hippovet_logo_poziom_1500px.png",  # <--- TWOJA NAZWA (Najważniejsza)
+        "logo.png", "Logo.png", "LOGO.png",
+        "logo.jpg", "Logo.jpg", "Hippovet.png"
+    ]
+    for name in possible_names:
+        if os.path.exists(name):
+            return name
+    return None
+
+
 # ===== FUNKCJA STOPKI (FOOTER) =====
 def render_footer():
     st.markdown("""
@@ -166,17 +181,19 @@ def save_df(df: pd.DataFrame) -> None:
 # ==========================================
 def render_public_view(df: pd.DataFrame):
     
-    # === LOGO ZAMIAST TYTUŁU ===
-    # Jeśli plik logo istnieje, wyświetlamy go.
-    if os.path.exists("logo.png"):
-        # width=500 to przykładowa szerokość, możesz zmienić na np. 300 lub 700
-        st.image("logo.png", width=500) 
-    elif os.path.exists("logo.jpg"):
-        st.image("logo.jpg", width=500)
+    # === INTELIGENTNE LOGO ===
+    logo_file = get_logo_path()
+    
+    if logo_file:
+        # width=500 - dopasuj jeśli logo jest za duże/za małe
+        st.image(logo_file, width=500) 
     else:
-        # Fallback (gdyby nie było pliku)
         st.title("🐴 Hippovet - Wyniki Badań")
-        
+        # Diagnostyka (pokaż tylko jeśli plik nie został wykryty)
+        with st.expander("⚠️ Debugowanie loga"):
+            st.warning(f"Nie znaleziono pliku. Szukałem m.in: '612_124_hippovet_logo_poziom_1500px.png'")
+            st.write("Pliki na serwerze:", os.listdir("."))
+
     st.write("---")
 
     if "selected_map_view" not in st.session_state:
@@ -332,11 +349,11 @@ df = load_df()
 
 # --- SIDEBAR (Pasek boczny) ---
 with st.sidebar:
-    # W pasku bocznym też zostawiamy logo, bo to standard
-    if os.path.exists("logo.png"):
-        st.image("logo.png", use_container_width=True)
-    elif os.path.exists("logo.jpg"):
-        st.image("logo.jpg", use_container_width=True)
+    
+    # Logo w sidebarze
+    logo_file = get_logo_path()
+    if logo_file:
+        st.image(logo_file, use_container_width=True)
     else:
         st.image("https://placehold.co/200x100?text=HIPPOVET", use_container_width=True)
 
@@ -379,5 +396,5 @@ if st.session_state["logged_in"]:
 else:
     render_public_view(df)
 
-# STOPKA (WYWOŁYWANA ZAWSZE NA KOŃCU)
+# STOPKA
 render_footer()
