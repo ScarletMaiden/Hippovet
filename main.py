@@ -180,19 +180,31 @@ def save_df(df: pd.DataFrame) -> None:
 # ==========================================
 def render_public_view(df: pd.DataFrame):
     
-    # === PROFESJONALNY NAGŁÓWEK ===
-    # Używamy HTML/CSS, żeby wyśrodkować tekst i nadać mu ładny styl
+    # === PROFESJONALNY NAGŁÓWEK Z TŁEM ===
+    # Używamy CSS, żeby dodać tło (zdjęcie) i nałożyć na nie białą, półprzezroczystą warstwę (efekt mleczny)
     st.markdown("""
-        <div style='text-align: center; padding-bottom: 20px;'>
-            <h1 style='font-size: 3rem; margin-bottom: 0;'>🐴 Hippovet</h1>
-            <h3 style='color: #555; font-weight: 300; margin-top: 5px;'>Centrum Wyników Badań</h3>
-            <p style='color: #888; font-style: italic; font-size: 1.1rem;'>
+        <div style='
+            text-align: center;
+            padding: 40px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            /* Tu dzieje się magia: najpierw biały gradient (mleko), pod spodem zdjęcie */
+            background-image:
+                linear-gradient(to bottom, rgba(255,255,255,0.85), rgba(255,255,255,0.85)),
+                url("https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D");
+            background-size: cover;
+            background-position: center;
+            margin-bottom: 30px;
+        '>
+            <h1 style='font-size: 3rem; margin-bottom: 5px; color: #222; text-shadow: 1px 1px 2px rgba(255,255,255,0.8);'>🐴 Hippovet</h1>
+            <h3 style='color: #444; font-weight: 400; margin-top: 0; letter-spacing: 1px;'>Centrum Wyników Badań</h3>
+            <p style='color: #555; font-size: 1.1rem; margin-top: 15px; max-width: 700px; margin-left: auto; margin-right: auto;'>
                 Profesjonalna diagnostyka parazytologiczna dla zdrowia Twojego konia
             </p>
         </div>
     """, unsafe_allow_html=True)
         
-    st.write("---")
+    # st.write("---") # Usunąłem linię, bo nowy nagłówek ma już ładny odstęp
 
     if "selected_map_view" not in st.session_state:
         st.session_state["selected_map_view"] = "konie"
@@ -348,7 +360,7 @@ df = load_df()
 # --- SIDEBAR (Pasek boczny) ---
 with st.sidebar:
     
-    # Logo w sidebarze (Zostawiamy, tak jak chciałaś)
+    # Logo w sidebarze
     logo_file = get_logo_path()
     if logo_file:
         st.image(logo_file, use_container_width=True)
