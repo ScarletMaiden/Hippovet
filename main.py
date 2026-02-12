@@ -45,9 +45,8 @@ except Exception:
 # ===== FUNKCJA POMOCNICZA: SZUKANIE LOGA =====
 def get_logo_path():
     """Szuka pliku z logiem na serwerze"""
-    # Tutaj wpisujemy możliwe nazwy Twojego pliku
     possible_names = [
-        "612_124_hippovet_logo_poziom_1500px.png",  # <--- TWOJA NAZWA (Najważniejsza)
+        "612_124_hippovet_logo_poziom_1500px.png",
         "logo.png", "Logo.png", "LOGO.png",
         "logo.jpg", "Logo.jpg", "Hippovet.png"
     ]
@@ -181,19 +180,18 @@ def save_df(df: pd.DataFrame) -> None:
 # ==========================================
 def render_public_view(df: pd.DataFrame):
     
-    # === INTELIGENTNE LOGO ===
-    logo_file = get_logo_path()
-    
-    if logo_file:
-        # width=500 - dopasuj jeśli logo jest za duże/za małe
-        st.image(logo_file, width=500) 
-    else:
-        st.title("🐴 Hippovet - Wyniki Badań")
-        # Diagnostyka (pokaż tylko jeśli plik nie został wykryty)
-        with st.expander("⚠️ Debugowanie loga"):
-            st.warning(f"Nie znaleziono pliku. Szukałem m.in: '612_124_hippovet_logo_poziom_1500px.png'")
-            st.write("Pliki na serwerze:", os.listdir("."))
-
+    # === PROFESJONALNY NAGŁÓWEK ===
+    # Używamy HTML/CSS, żeby wyśrodkować tekst i nadać mu ładny styl
+    st.markdown("""
+        <div style='text-align: center; padding-bottom: 20px;'>
+            <h1 style='font-size: 3rem; margin-bottom: 0;'>🐴 Hippovet</h1>
+            <h3 style='color: #555; font-weight: 300; margin-top: 5px;'>Centrum Wyników Badań</h3>
+            <p style='color: #888; font-style: italic; font-size: 1.1rem;'>
+                Profesjonalna diagnostyka parazytologiczna dla zdrowia Twojego konia
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+        
     st.write("---")
 
     if "selected_map_view" not in st.session_state:
@@ -350,7 +348,7 @@ df = load_df()
 # --- SIDEBAR (Pasek boczny) ---
 with st.sidebar:
     
-    # Logo w sidebarze
+    # Logo w sidebarze (Zostawiamy, tak jak chciałaś)
     logo_file = get_logo_path()
     if logo_file:
         st.image(logo_file, use_container_width=True)
