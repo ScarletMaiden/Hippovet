@@ -41,6 +41,36 @@ except Exception:
     render_simple_map = None
 
 
+# ===== FUNKCJA STOPKI (FOOTER) =====
+def render_footer():
+    st.markdown("""
+    <style>
+    .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: white;
+        color: #888;
+        text-align: center;
+        padding: 10px;
+        font-size: 12px;
+        border-top: 1px solid #eee;
+        z-index: 1000;
+    }
+    /* Ukrycie domyślnej stopki Streamlit */
+    footer {visibility: hidden;}
+    </style>
+    
+    <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #888; font-size: 13px;">
+        <p>
+            &copy; 2025 <b>Hippovet</b>. Wszelkie prawa zastrzeżone.<br>
+            Dbamy o zdrowie Twoich koni 🐴
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
 # ===== POŁĄCZENIE Z GOOGLE SHEETS =====
 @st.cache_resource(show_spinner=False)
 def _get_ws():
@@ -71,19 +101,16 @@ def load_df() -> pd.DataFrame:
     if not values:
         return pd.DataFrame(columns=COLS)
 
-    # Usuwanie pustych wierszy z końca
     while values and all((c.strip() == "" for c in values[-1])):
         values.pop()
 
     headers = [h.strip() for h in values[0]]
     data_rows = values[1:]
 
-    # Wyrównanie kolumn
     width = len(headers)
     data_rows = [r[:width] + [""] * max(0, width - len(r)) for r in data_rows]
     df0 = pd.DataFrame(data_rows, columns=headers)
 
-    # Aliasy nazw kolumn
     aliases = {
         "nr zamowienia": "nr zamówienia",
         "nr badania": "nr badania",
@@ -99,19 +126,16 @@ def load_df() -> pd.DataFrame:
     }
     df0 = df0.rename(columns={c: aliases.get(str(c).strip().lower(), str(c).strip()) for c in df0.columns})
 
-    # Czyszczenie danych
     df0 = df0.replace(r"^\s*$", pd.NA, regex=True)
     lower = df0.astype(str).apply(lambda s: s.str.strip().str.lower())
     df0 = df0.mask(lower.isin(["none", "null"]))
     df0 = df0.dropna(how="all")
 
-    # Uzupełnienie brakujących kolumn
     for c in COLS:
         if c not in df0.columns:
             df0[c] = pd.NA
     df0 = df0.loc[:, COLS]
 
-    # Konwersja kolumn binarnych
     for c in BINARY_COLS:
         df0[c] = pd.to_numeric(df0[c], errors="coerce").fillna(0).astype(int)
 
@@ -144,18 +168,17 @@ def render_public_view(df: pd.DataFrame):
     st.title("🐴 Hippovet - Wyniki Badań")
     st.write("---")
 
-    # Inicjalizacja wyboru mapy w pamięci przeglądarki
     if "selected_map_view" not in st.session_state:
         st.session_state["selected_map_view"] = "konie"
 
-    st.subheader("🗺️ Wybierz mapę występowania")
+    # === TUTAJ ZMIANA: WYŚRODKOWANY NAGŁÓWEK ===
+    st.markdown("<h3 style='text-align: center;'>🗺️ Wybierz mapę występowania</h3>", unsafe_allow_html=True)
+    st.write("") # Mały odstęp
 
-    # === ŁADNE PRZYCISKI ZAMIAST ZAKŁADEK ===
-    # Tworzymy 3 kolumny na przyciski
+    # Przyciski
     c1, c2, c3 = st.columns(3)
     
     with c1:
-        # Jeśli wybrano 'konie', przycisk jest PRIMARY (czerwony/wypełniony), jeśli nie - SECONDARY (szary)
         btn_type = "primary" if st.session_state["selected_map_view"] == "konie" else "secondary"
         if st.button("🐴 Pasożyty (Konie)", use_container_width=True, type=btn_type):
             st.session_state["selected_map_view"] = "konie"
@@ -173,10 +196,8 @@ def render_public_view(df: pd.DataFrame):
             st.session_state["selected_map_view"] = "mix"
             st.rerun()
 
-    # === WYŚWIETLANIE TREŚCI NA PODSTAWIE PRZYCISKU ===
-    st.write("") # odstęp
+    st.write("") 
     
-    # Ramka (container) dla lepszego wyglądu
     with st.container(border=True):
         if st.session_state["selected_map_view"] == "konie":
             st.markdown("#### 🐴 Występowanie pasożytów u koni")
@@ -191,7 +212,6 @@ def render_public_view(df: pd.DataFrame):
         elif st.session_state["selected_map_view"] == "bydlo":
             st.markdown("#### 🐮 Mapa Bydła (W przygotowaniu)")
             st.info("Ta funkcjonalność zostanie dodana wkrótce.")
-            # Placeholder (obrazek tymczasowy)
             st.image("https://placehold.co/800x300?text=Mapa+Dla+Bydla+wkrotce", use_container_width=True)
             
         elif st.session_state["selected_map_view"] == "mix":
@@ -201,7 +221,6 @@ def render_public_view(df: pd.DataFrame):
 
     st.divider()
 
-    # 2. Wyszukiwarka (Ukrywamy nr zamówienia)
     st.subheader("🔎 Sprawdź wynik badania")
     
     public_cols = [c for c in COLS if c != "nr zamówienia"]
@@ -336,7 +355,11 @@ with st.sidebar:
                     st.session_state["show_login_form"] = False
                     st.rerun()
 
+# Wyświetlenie treści
 if st.session_state["logged_in"]:
     render_admin_view(df)
 else:
     render_public_view(df)
+
+# STOPKA (WYWOŁYWANA ZAWSZE NA KOŃCU)
+render_footer()
