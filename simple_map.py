@@ -32,7 +32,7 @@ def _postal_to_coords(series: pd.Series) -> pd.DataFrame:
 def render_simple_map(df: pd.DataFrame):
     parasite_cols = ["Anoplocephala perfoliata", "Oxyuris equi", "Parascaris equorum", "Strongyloides spp"]
     
-    # 1. Wybór pasożyta i Przełącznik widoczności zer
+    # Wybór pasożyta i przełącznik
     col_sel, col_toggle = st.columns([2, 2])
     
     with col_sel:
@@ -81,7 +81,7 @@ def render_simple_map(df: pd.DataFrame):
         st.info("Brak danych.")
         return
 
-    # Podział na >0 i ==0
+    # Podział danych
     df_pos = agg[agg["cases"] > 0].copy()
     df_pos["size"] = df_pos["cases"].clip(lower=1)
     
@@ -89,7 +89,7 @@ def render_simple_map(df: pd.DataFrame):
     
     max_cases = int(df_pos["cases"].max()) if not df_pos.empty else 0
 
-    # === RYSOWANIE MAPY ===
+    # === RYSOWANIE ===
     
     # Warstwa 1: Wyniki pozytywne (Czerwone)
     if not df_pos.empty:
@@ -129,41 +129,40 @@ def render_simple_map(df: pd.DataFrame):
             name='Wynik ujemny (0)'
         ))
 
-    # Wygląd mapy i legendy
+    # Wygląd ogólny
     fig.update_layout(
         mapbox_style="open-street-map",
         margin=dict(l=0, r=0, t=0, b=0),
         uirevision="fixed",
         
+        # Legenda (lewy górny róg)
         legend=dict(
             yanchor="top",
             y=0.98,
             xanchor="left",
             x=0.02,
-            font=dict(
-                family="Arial",
-                size=14,
-                color="black"
-            ),
+            font=dict(family="Arial", size=14, color="black"),
             bgcolor="white",
             bordercolor="gray",
             borderwidth=1
         )
     )
     
-    # Skala kolorów (POPRAWIONA)
+    # Skala kolorów (Liczba przypadków)
     if not df_pos.empty:
         fig.update_coloraxes(
             cmin=0,
             cmax=max_cases if max_cases > 0 else 1,
             colorbar=dict(
-                # TU BYŁA ZMIANA: Tytuł jako słownik z polem 'font'
                 title=dict(
                     text="Liczba<br>przypadków",
                     font=dict(color="black")
                 ),
                 tickfont=dict(color="black"),
-                bgcolor="rgba(255,255,255,0.8)",
+                
+                # TU ZMIANA: Tło ustawione na pełną przezroczystość
+                bgcolor="rgba(0,0,0,0)",
+                
                 tick0=0, 
                 dtick=1 if max_cases < 10 else None
             )
