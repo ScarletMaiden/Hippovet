@@ -83,7 +83,7 @@ def load_df() -> pd.DataFrame:
     data_rows = [r[:width] + [""] * max(0, width - len(r)) for r in data_rows]
     df0 = pd.DataFrame(data_rows, columns=headers)
 
-    # Aliasy nazw kolumn (zabezpieczenie przed literówkami w Excelu)
+    # Aliasy nazw kolumn
     aliases = {
         "nr zamowienia": "nr zamówienia",
         "nr badania": "nr badania",
@@ -111,7 +111,7 @@ def load_df() -> pd.DataFrame:
             df0[c] = pd.NA
     df0 = df0.loc[:, COLS]
 
-    # Konwersja kolumn binarnych (0/1)
+    # Konwersja kolumn binarnych
     for c in BINARY_COLS:
         df0[c] = pd.to_numeric(df0[c], errors="coerce").fillna(0).astype(int)
 
@@ -142,39 +142,74 @@ def save_df(df: pd.DataFrame) -> None:
 # ==========================================
 def render_public_view(df: pd.DataFrame):
     st.title("🐴 Hippovet - Wyniki Badań")
+    st.write("---")
 
-    # 1. Mapy w zakładkach
-    st.subheader("🗺️ Mapy występowania")
-    tab1, tab2, tab3 = st.tabs(["Pasożyty (Konie)", "Bydło (Plan)", "Mapa zbiorcza (Plan)"])
+    # Inicjalizacja wyboru mapy w pamięci przeglądarki
+    if "selected_map_view" not in st.session_state:
+        st.session_state["selected_map_view"] = "konie"
 
-    with tab1:
-        if render_simple_map:
-            try:
-                render_simple_map(df)
-            except Exception as e:
-                st.error(f"Błąd mapy: {e}")
-        else:
-            st.info("Moduł mapy niedostępny.")
+    st.subheader("🗺️ Wybierz mapę występowania")
 
-    with tab2:
-        st.info("🚧 Tutaj w przyszłości pojawi się mapa z występowaniem bydła.")
+    # === ŁADNE PRZYCISKI ZAMIAST ZAKŁADEK ===
+    # Tworzymy 3 kolumny na przyciski
+    c1, c2, c3 = st.columns(3)
+    
+    with c1:
+        # Jeśli wybrano 'konie', przycisk jest PRIMARY (czerwony/wypełniony), jeśli nie - SECONDARY (szary)
+        btn_type = "primary" if st.session_state["selected_map_view"] == "konie" else "secondary"
+        if st.button("🐴 Pasożyty (Konie)", use_container_width=True, type=btn_type):
+            st.session_state["selected_map_view"] = "konie"
+            st.rerun()
+            
+    with c2:
+        btn_type = "primary" if st.session_state["selected_map_view"] == "bydlo" else "secondary"
+        if st.button("🐮 Bydło (Plan)", use_container_width=True, type=btn_type):
+            st.session_state["selected_map_view"] = "bydlo"
+            st.rerun()
+            
+    with c3:
+        btn_type = "primary" if st.session_state["selected_map_view"] == "mix" else "secondary"
+        if st.button("🔄 Mapa zbiorcza (Plan)", use_container_width=True, type=btn_type):
+            st.session_state["selected_map_view"] = "mix"
+            st.rerun()
 
-    with tab3:
-        st.info("🚧 Tutaj w przyszłości pojawi się nakładka obu map.")
+    # === WYŚWIETLANIE TREŚCI NA PODSTAWIE PRZYCISKU ===
+    st.write("") # odstęp
+    
+    # Ramka (container) dla lepszego wyglądu
+    with st.container(border=True):
+        if st.session_state["selected_map_view"] == "konie":
+            st.markdown("#### 🐴 Występowanie pasożytów u koni")
+            if render_simple_map:
+                try:
+                    render_simple_map(df)
+                except Exception as e:
+                    st.error(f"Błąd mapy: {e}")
+            else:
+                st.info("Moduł mapy niedostępny.")
+                
+        elif st.session_state["selected_map_view"] == "bydlo":
+            st.markdown("#### 🐮 Mapa Bydła (W przygotowaniu)")
+            st.info("Ta funkcjonalność zostanie dodana wkrótce.")
+            # Placeholder (obrazek tymczasowy)
+            st.image("https://placehold.co/800x300?text=Mapa+Dla+Bydla+wkrotce", use_container_width=True)
+            
+        elif st.session_state["selected_map_view"] == "mix":
+            st.markdown("#### 🔄 Mapa zbiorcza / Nakładka")
+            st.info("Tutaj będziesz mógł porównać dane z obu map.")
+            st.image("https://placehold.co/800x300?text=Mapa+Zbiorcza", use_container_width=True)
 
     st.divider()
 
     # 2. Wyszukiwarka (Ukrywamy nr zamówienia)
     st.subheader("🔎 Sprawdź wynik badania")
     
-    # Kopia danych bez wrażliwej kolumny "nr zamówienia"
     public_cols = [c for c in COLS if c != "nr zamówienia"]
     df_public = df[public_cols].copy()
 
     q = st.text_input("Podaj numer badania:", placeholder="np. 26-02")
     
     if q:
-        # Wyszukiwanie częściowe (np. wpisanie "26-02" znajdzie "26-02/BP04")
         mask = df_public["nr badania"].astype(str).str.contains(q.strip(), case=False, na=False)
         res = df_public.loc[mask]
         
@@ -184,7 +219,6 @@ def render_public_view(df: pd.DataFrame):
         else:
             st.warning("Nie znaleziono badania o takim numerze.")
     else:
-        # Tabela zbiorcza (bez nr zamówienia)
         st.write("Ostatnie wyniki:")
         st.dataframe(df_public, use_container_width=True)
 
@@ -196,18 +230,16 @@ def render_admin_view(df: pd.DataFrame):
     st.title("🛠️ Panel Administratora")
     st.success("Jesteś w trybie edycji (pełny dostęp).")
 
-    # Narzędzia w pasku bocznym
     with st.sidebar:
         st.markdown("---")
         st.write("### 🗑️ Usuwanie")
         df, deleted = render_delete_form(df, save_df) 
     
-    # Auto-uzupełnianie powiatów (działa w tle)
+    # Auto-uzupełnianie powiatów
     df_before = df.copy()
     df_after, _, used_col = fill_powiat_auto(
         df, powiat_col="Powiat", kod_candidates=("Kod-pocztowy", "Kod-pocztowy ")
     )
-    # Sprawdź czy coś się zmieniło
     try:
         new_filled = (df_before["Powiat"].isna() & df_after["Powiat"].notna()).sum()
     except KeyError:
@@ -218,21 +250,18 @@ def render_admin_view(df: pd.DataFrame):
         save_df(df)
         st.toast(f"ℹ️ Automat uzupełnił powiaty w {new_filled} wierszach.")
 
-    # Mapa (taka sama jak publiczna, ale dostępna dla admina)
     with st.expander("🗺️ Pokaż mapę", expanded=False):
         if render_simple_map:
             render_simple_map(df)
 
     st.subheader("📑 Pełna baza danych (z nr zamówienia)")
     
-    # Wyszukiwarka Admina (Pełna)
     c1, c2 = st.columns([1, 2])
     with c1:
         search_field = st.selectbox("Szukaj po:", ["nr zamówienia", "nr badania"])
     with c2:
         q_admin = st.text_input("Szukana fraza...", key="admin_q")
     
-    # Upewnienie się co do kolumn
     for col in COLS:
         if col not in df.columns:
             df[col] = pd.NA
@@ -247,7 +276,6 @@ def render_admin_view(df: pd.DataFrame):
 
     st.divider()
     
-    # Formularze Dodawania i Edycji
     col_add, col_edit = st.columns(2)
     
     with col_add:
@@ -258,46 +286,37 @@ def render_admin_view(df: pd.DataFrame):
         st.subheader("✏️ Edytuj rekord")
         df, edited = render_edit_form(df, save_df, COLS)
 
-    # Odświeżenie strony po zmianach
     if any([added, edited, deleted]):
         st.rerun()
 
 
 # ==========================================
-# ===== LOGIKA GŁÓWNA (START APLIKACJI) =====
+# ===== LOGIKA GŁÓWNA =====
 # ==========================================
 
-# 1. Inicjalizacja "pamięci" aplikacji (session_state)
 if "logged_in" not in st.session_state:
-    st.session_state["logged_in"] = False      # Czy użytkownik jest zalogowany?
+    st.session_state["logged_in"] = False      
 if "show_login_form" not in st.session_state:
-    st.session_state["show_login_form"] = False # Czy pokazać okienko logowania?
+    st.session_state["show_login_form"] = False 
 
-# 2. Wczytanie danych
 df = load_df()
 
-# 3. Pasek Boczny (Sidebar) - Obsługa Logowania
 with st.sidebar:
     st.image("https://placehold.co/200x100?text=HIPPOVET", use_container_width=True)
     
-    # Sytuacja A: Użytkownik jest już zalogowany
     if st.session_state["logged_in"]:
-        st.success("Zalogowano jako Admin")
+        st.success("Zalogowano: Admin")
         if st.button("Wyloguj", use_container_width=True):
             st.session_state["logged_in"] = False
             st.session_state["show_login_form"] = False
             st.rerun()
             
-    # Sytuacja B: Użytkownik niezalogowany
     else:
-        # Jeśli NIE kliknięto jeszcze "Administracja" -> pokaż przycisk
         if not st.session_state["show_login_form"]:
-            st.write("") # odstęp
+            st.write("") 
             if st.button("🔐 Administracja", use_container_width=True):
                 st.session_state["show_login_form"] = True
                 st.rerun()
-        
-        # Jeśli kliknięto -> pokaż formularz z hasłem i krzyżykiem
         else:
             st.markdown("---")
             st.markdown("##### Logowanie")
@@ -317,7 +336,6 @@ with st.sidebar:
                     st.session_state["show_login_form"] = False
                     st.rerun()
 
-# 4. Wyświetlenie odpowiedniego widoku
 if st.session_state["logged_in"]:
     render_admin_view(df)
 else:
