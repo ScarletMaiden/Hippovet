@@ -61,29 +61,26 @@ def get_logo_path():
 def inject_custom_css():
     st.markdown("""
     <style>
-        /* 1. SIDEBAR (PASEK BOCZNY) - ZWĘŻENIE */
+        /* Twoje poprzednie style dla paska bocznego... */
         [data-testid="stSidebar"] {
             background-color: #ffffff;
             border-right: 1px solid #f0f0f0;
-            min-width: 200px !important; /* Tu ustawiasz minimalną szerokość */
-            max-width: 200px !important; /* Tu ustawiasz maksymalną szerokość */
             width: 200px !important;
         }
-        
-        /* Dostosowanie głównej treści, aby nie było dziury po zwężeniu paska */
-        [data-testid="stSidebarCollapsedControl"] {
-            left: 20px;
+
+        /* NOWY STYL DLA PRZYCISKU PO NAJECHANIU */
+        div[data-testid="stSidebar"] button:hover {
+            border-color: #007bff !important; /* Niebieska ramka */
+            color: #007bff !important;        /* Niebieski tekst */
+            background-color: rgba(0, 123, 255, 0.1) !important; /* Delikatne niebieskie tło */
         }
 
-        /* Ukrycie domyślnego przycisku nawigacji, jeśli jeszcze tam jest */
-        [data-testid="stSidebarNav"] {
-            display: none;
+        /* Zabezpieczenie, aby tekst nie znikał (nie był biały) */
+        div[data-testid="stSidebar"] button {
+            color: #31333F !important; /* Ciemny tekst domyślnie */
         }
-        
-        /* ... reszta Twoich stylów (stopka, przyciski itp.) ... */
     </style>
     """, unsafe_allow_html=True)
-
 
 # ===== FUNKCJA STOPKI (FOOTER) =====
 def render_footer():
@@ -439,4 +436,5 @@ else:
 
 # STOPKA
 render_footer()
+
 
