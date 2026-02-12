@@ -87,32 +87,28 @@ def inject_custom_css():
 
 # ===== FUNKCJA STOPKI (FOOTER) =====
 def render_footer():
-    # Uproszczona stopka: logo po lewej, dane po prawej, ciemne tło
-    # Kluczem jest wywołanie st.markdown z parametrem unsafe_allow_html=True
-    st.markdown("""
-    <div style="
-        background-color: #0e1117; 
-        color: #ffffff; 
-        padding: 20px; 
-        margin-top: 50px; 
-        display: flex; 
-        align-items: center; 
-        gap: 30px; 
-        border-top: 1px solid #333;
-    ">
-        <img src="https://raw.githubusercontent.com/ScarletMaiden/Hippovet/testy-nowego-wygladu/612_124_hippovet_logo_poziom_1500px.png" width="100">
-        
-        <div style="font-family: sans-serif; font-size: 14px; line-height: 1.5;">
-            <strong>HippoVet+ dr Krzysztof Marycz</strong><br>
-            <strong>JKI Innovation Julia Kaczmarczyk</strong><br>
-            ul. Jesionowa 11<br>
-            51-114 Malin<br>
-            NIP: 9442115437, REGON: 387433495
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # 1. Tworzymy wyraźny odstęp od reszty treści
+    st.write("---")
     
-    # Ukrycie domyślnych elementów Streamlit
+    # 2. Tworzymy dwie kolumny: lewa na logo, prawa na dane
+    # Ustawiamy proporcje 1:4, żeby logo było malutkie
+    col1, col2 = st.columns([1, 4])
+    
+    with col1:
+        # Wyświetlamy malutkie logo za pomocą standardowej funkcji Streamlit
+        st.image("https://raw.githubusercontent.com/ScarletMaiden/Hippovet/testy-nowego-wygladu/612_124_hippovet_logo_poziom_1500px.png", width=100)
+    
+    with col2:
+        # Wyświetlamy dane tekstowe w najprostszy możliwy sposób
+        st.markdown(
+            """
+            **HippoVet+ dr Krzysztof Marycz** **JKI Innovation Julia Kaczmarczyk** ul. Jesionowa 11  
+            51-114 Malin  
+            NIP: 9442115437, REGON: 387433495
+            """
+        )
+
+    # 3. Ukrywamy napisy Streamlit na samym dole
     st.markdown("<style>footer {visibility: hidden;}</style>", unsafe_allow_html=True)
 # ===== POŁĄCZENIE Z GOOGLE SHEETS =====
 @st.cache_resource(show_spinner=False)
@@ -440,6 +436,7 @@ else:
 
 # STOPKA
 render_footer()
+
 
 
 
