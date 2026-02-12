@@ -58,29 +58,22 @@ def get_logo_path():
 
 
 # ===== STYLIZACJA (CSS) =====
-# Tutaj zmieniamy wygląd paska bocznego i stopki
 def inject_custom_css():
     st.markdown("""
     <style>
-        /* 1. ZMIANA WYGLĄDU SIDEBARA (PASKA BOCZNEGO) */
+        /* 1. SIDEBAR (PASEK BOCZNY) */
         [data-testid="stSidebar"] {
-            background-color: #ffffff; /* Białe tło paska */
-            border-right: 1px solid #f0f0f0; /* Delikatna linia oddzielająca */
+            background-color: #ffffff;
+            border-right: 1px solid #f0f0f0;
         }
         
-        /* Ukrycie uchwytu do zmiany rozmiaru paska (dla czystszego wyglądu) */
+        /* Ukrycie uchwytu zmiany rozmiaru */
         [data-testid="stSidebarNav"] {
             display: none;
         }
         
-        /* Ładniejsze przyciski w sidebarze */
-        .stButton button {
-            border-radius: 8px;
-            font-weight: 500;
-        }
-
         /* 2. STOPKA */
-        footer {visibility: hidden;} /* Ukrycie "Made with Streamlit" */
+        footer {visibility: hidden;}
         
         .safe-footer {
             width: 100%;
@@ -240,24 +233,26 @@ def save_df(df: pd.DataFrame) -> None:
 # ==========================================
 def render_public_view(df: pd.DataFrame):
     
-    # === PROFESJONALNY NAGŁÓWEK Z TŁEM (MLECZNE SZKŁO) ===
+    # === NAGŁÓWEK Z KONIEM (POPRAWIONY) ===
     st.markdown("""
         <div style='
             text-align: center;
-            padding: 40px 20px;
+            padding: 50px 20px;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), 
-                        url("https://images.unsplash.com/photo-1534008139268-2b81d835150e?auto=format&fit=crop&w=1000&q=80");
+            /* ZDJĘCIE Z MNIEJSZĄ WARSTWĄ BIELI (0.8 zamiast 0.9) */
+            background-image: 
+                linear-gradient(to bottom, rgba(255,255,255,0.75), rgba(255,255,255,0.75)),
+                url("https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?q=80&w=1471&auto=format&fit=crop");
             background-size: cover;
             background-position: center;
             margin-bottom: 40px;
             border: 1px solid #eee;
         '>
             <h1 style='font-size: 2.8rem; margin-bottom: 5px; color: #111; letter-spacing: -1px;'>🐴 Hippovet</h1>
-            <h3 style='color: #444; font-weight: 400; text-transform: uppercase; font-size: 1.1rem; letter-spacing: 2px; margin-top: 0;'>Centrum Wyników Badań</h3>
+            <h3 style='color: #333; font-weight: 400; text-transform: uppercase; font-size: 1.1rem; letter-spacing: 2px; margin-top: 0;'>Centrum Wyników Badań</h3>
             <div style='width: 50px; height: 3px; background: #e74c3c; margin: 20px auto;'></div>
-            <p style='color: #555; font-size: 1.1rem; font-style: italic;'>
+            <p style='color: #444; font-size: 1.1rem; font-style: italic; font-weight: 500;'>
                 Profesjonalna diagnostyka parazytologiczna dla zdrowia Twojego konia
             </p>
         </div>
@@ -440,8 +435,6 @@ with st.sidebar:
         # Jeśli nie kliknięto "Administracja"
         if not st.session_state["show_login_form"]:
             st.write("")
-            # Używamy st.columns żeby wyśrodkować przycisk
-            # (To mały trik wizualny)
             st.markdown("---")
             if st.button("🔐 Panel Administracyjny", use_container_width=True):
                 st.session_state["show_login_form"] = True
