@@ -87,34 +87,33 @@ def inject_custom_css():
 
 # ===== FUNKCJA STOPKI (FOOTER) =====
 def render_footer():
-    # Pobieramy ścieżkę do logo, którą już masz w kodzie
-    logo_path = get_logo_path()
-    
-    # Tworzymy uproszczoną stopkę na ciemnym tle
-    st.markdown(f"""
+    # Uproszczona stopka: logo po lewej, dane po prawej, ciemne tło
+    st.markdown("""
     <style>
-    footer {{visibility: hidden;}} /* Ukrywa napisy Streamlit */
+    footer {visibility: hidden;} /* Ukrywa standardowe napisy Streamlit */
     
-    .simple-footer {{
-        background-color: #0e1117; /* Ciemne tło pasujące do aplikacji */
-        padding: 30px;
+    .simple-footer {
+        background-color: #0e1117; /* Ciemne tło */
+        padding: 20px;
         margin-top: 50px;
-        border-top: 1px solid #333;
         display: flex;
         align-items: center;
-        gap: 20px;
-    }}
+        justify-content: flex-start;
+        gap: 30px;
+        border-radius: 8px;
+    }
     
-    .footer-text {{
+    .footer-text {
         color: #ffffff;
         font-family: sans-serif;
         font-size: 14px;
-        line-height: 1.5;
-    }}
+        line-height: 1.4;
+        text-align: left;
+    }
     </style>
     
     <div class="simple-footer">
-        <img src="https://raw.githubusercontent.com/ScarletMaiden/Hippovet/testy-nowego-wygladu/612_124_hippovet_logo_poziom_1500px.png" width="120">
+        <img src="https://raw.githubusercontent.com/ScarletMaiden/Hippovet/testy-nowego-wygladu/612_124_hippovet_logo_poziom_1500px.png" width="100">
         
         <div class="footer-text">
             <strong>HippoVet+ dr Krzysztof Marycz</strong><br>
@@ -451,6 +450,7 @@ else:
 
 # STOPKA
 render_footer()
+
 
 
 
