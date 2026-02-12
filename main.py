@@ -60,27 +60,70 @@ def get_logo_path():
 def render_footer():
     st.markdown("""
     <style>
-    .footer {
-        position: fixed;
-        left: 0;
-        bottom: 0;
-        width: 100%;
-        background-color: white;
-        color: #888;
-        text-align: center;
-        padding: 10px;
-        font-size: 12px;
-        border-top: 1px solid #eee;
-        z-index: 1000;
-    }
+    /* Ukrywamy domyślną stopkę Streamlit */
     footer {visibility: hidden;}
+    
+    .custom-footer {
+        width: 100%;
+        background-color: #f8f9fa; /* Jasne tło stopki */
+        border-top: 1px solid #e9ecef;
+        padding: 40px 20px;
+        color: #6c757d;
+        font-size: 14px;
+        margin-top: 60px;
+        font-family: sans-serif;
+    }
+    
+    .footer-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between; /* Lewa i Prawa strona */
+        flex-wrap: wrap;
+        gap: 30px;
+    }
+    
+    .footer-left {
+        text-align: left;
+        line-height: 1.6;
+    }
+    
+    .footer-right {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+    }
+    
+    /* Na telefonach środkujemy wszystko */
+    @media (max-width: 700px) {
+        .footer-container {
+            flex-direction: column;
+            text-align: center;
+        }
+        .footer-left, .footer-right {
+            text-align: center;
+        }
+    }
     </style>
     
-    <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #888; font-size: 13px;">
-        <p>
-            &copy; 2025 <b>Hippovet</b>. Wszelkie prawa zastrzeżone.<br>
-            Dbamy o zdrowie Twoich koni 🐴
-        </p>
+    <div class="custom-footer">
+        <div class="footer-container">
+            
+            <div class="footer-left">
+                <strong>HippoVet+ dr Krzysztof Marycz</strong><br>
+                <strong>JKI Innovation Julia Kaczmarczyk</strong><br>
+                ul. Jesionowa 11<br>
+                51-114 Malin<br>
+                <span style="font-size: 13px;">NIP: 9442115437, REGON: 387433495</span>
+            </div>
+            
+            <div class="footer-right">
+                <p style="margin: 0;">&copy; 2025 <b>Hippovet</b>. Wszelkie prawa zastrzeżone.</p>
+                <p style="margin: 5px 0 0 0; font-style: italic; color: #adb5bd;">Dbamy o zdrowie Twoich koni 🐴</p>
+            </div>
+            
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -181,17 +224,15 @@ def save_df(df: pd.DataFrame) -> None:
 def render_public_view(df: pd.DataFrame):
     
     # === PROFESJONALNY NAGŁÓWEK Z TŁEM ===
-    # Używamy CSS, żeby dodać tło (zdjęcie) i nałożyć na nie białą, półprzezroczystą warstwę (efekt mleczny)
     st.markdown("""
         <div style='
             text-align: center;
             padding: 40px 20px;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            /* Tu dzieje się magia: najpierw biały gradient (mleko), pod spodem zdjęcie */
             background-image:
                 linear-gradient(to bottom, rgba(255,255,255,0.85), rgba(255,255,255,0.85)),
-                url("https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D");
+                url("https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?q=80&w=1471&auto=format&fit=crop");
             background-size: cover;
             background-position: center;
             margin-bottom: 30px;
@@ -203,8 +244,6 @@ def render_public_view(df: pd.DataFrame):
             </p>
         </div>
     """, unsafe_allow_html=True)
-        
-    # st.write("---") # Usunąłem linię, bo nowy nagłówek ma już ładny odstęp
 
     if "selected_map_view" not in st.session_state:
         st.session_state["selected_map_view"] = "konie"
@@ -360,7 +399,6 @@ df = load_df()
 # --- SIDEBAR (Pasek boczny) ---
 with st.sidebar:
     
-    # Logo w sidebarze
     logo_file = get_logo_path()
     if logo_file:
         st.image(logo_file, use_container_width=True)
@@ -406,5 +444,5 @@ if st.session_state["logged_in"]:
 else:
     render_public_view(df)
 
-# STOPKA
+# STOPKA (WYWOŁYWANA ZAWSZE NA KOŃCU)
 render_footer()
