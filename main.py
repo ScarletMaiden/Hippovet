@@ -1,6 +1,6 @@
 # main.py
 import json
-import os  # <--- Dodano import do sprawdzania plików
+import os
 import pandas as pd
 import streamlit as st
 
@@ -165,7 +165,18 @@ def save_df(df: pd.DataFrame) -> None:
 # ===== WIDOK PUBLICZNY (Dla Klienta) =====
 # ==========================================
 def render_public_view(df: pd.DataFrame):
-    st.title("🐴 Hippovet - Wyniki Badań")
+    
+    # === LOGO ZAMIAST TYTUŁU ===
+    # Jeśli plik logo istnieje, wyświetlamy go.
+    if os.path.exists("logo.png"):
+        # width=500 to przykładowa szerokość, możesz zmienić na np. 300 lub 700
+        st.image("logo.png", width=500) 
+    elif os.path.exists("logo.jpg"):
+        st.image("logo.jpg", width=500)
+    else:
+        # Fallback (gdyby nie było pliku)
+        st.title("🐴 Hippovet - Wyniki Badań")
+        
     st.write("---")
 
     if "selected_map_view" not in st.session_state:
@@ -321,8 +332,7 @@ df = load_df()
 
 # --- SIDEBAR (Pasek boczny) ---
 with st.sidebar:
-    # 1. LOGO: Sprawdzamy czy wgrano plik 'logo.png'
-    # Jeśli plik istnieje, wyświetlamy go. Jeśli nie - placeholder.
+    # W pasku bocznym też zostawiamy logo, bo to standard
     if os.path.exists("logo.png"):
         st.image("logo.png", use_container_width=True)
     elif os.path.exists("logo.jpg"):
