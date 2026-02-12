@@ -32,7 +32,6 @@ def _postal_to_coords(series: pd.Series) -> pd.DataFrame:
 def render_simple_map(df: pd.DataFrame):
     parasite_cols = ["Anoplocephala perfoliata", "Oxyuris equi", "Parascaris equorum", "Strongyloides spp"]
     
-    # Wybór pasożyta i przełącznik
     col_sel, col_toggle = st.columns([2, 2])
     
     with col_sel:
@@ -68,7 +67,6 @@ def render_simple_map(df: pd.DataFrame):
         st.info("Brak danych do pokazania na mapie.")
         return
 
-    # Agregacja
     agg = (
         m.groupby("Powiat", dropna=True)
          .agg(cases=(parasite, "sum"),
@@ -81,7 +79,6 @@ def render_simple_map(df: pd.DataFrame):
         st.info("Brak danych.")
         return
 
-    # Podział danych
     df_pos = agg[agg["cases"] > 0].copy()
     df_pos["size"] = df_pos["cases"].clip(lower=1)
     
@@ -90,8 +87,6 @@ def render_simple_map(df: pd.DataFrame):
     max_cases = int(df_pos["cases"].max()) if not df_pos.empty else 0
 
     # === RYSOWANIE ===
-    
-    # Warstwa 1: Wyniki pozytywne (Czerwone)
     if not df_pos.empty:
         fig = px.scatter_mapbox(
             df_pos,
@@ -113,7 +108,6 @@ def render_simple_map(df: pd.DataFrame):
             height=500
         )
 
-    # Warstwa 2: Wyniki zerowe (Żółte)
     if show_zeros and not df_zero.empty:
         fig.add_trace(go.Scattermapbox(
             lat=df_zero["latitude"],
@@ -129,40 +123,40 @@ def render_simple_map(df: pd.DataFrame):
             name='Wynik ujemny (0)'
         ))
 
-    # Wygląd ogólny
     fig.update_layout(
         mapbox_style="open-street-map",
         margin=dict(l=0, r=0, t=0, b=0),
         uirevision="fixed",
         
-        # Legenda (lewy górny róg)
+        # === ZMIANA: BIAŁY TEKST W LEGENDZIE ===
         legend=dict(
             yanchor="top",
             y=0.98,
             xanchor="left",
             x=0.02,
-            font=dict(family="Arial", size=14, color="black"),
-            bgcolor="white",
-            bordercolor="gray",
+            font=dict(
+                family="Arial",
+                size=14,
+                color="white"  # <--- BIAŁY KOLOR
+            ),
+            bgcolor="rgba(0,0,0,0.5)", # Półprzezroczyste tło legendy, żeby biały tekst był czytelny na jasnej mapie
+            bordercolor="white",
             borderwidth=1
         )
     )
     
-    # Skala kolorów (Liczba przypadków)
     if not df_pos.empty:
         fig.update_coloraxes(
             cmin=0,
             cmax=max_cases if max_cases > 0 else 1,
             colorbar=dict(
+                # === ZMIANA: BIAŁY TEKST NA PASKU SKALI ===
                 title=dict(
                     text="Liczba<br>przypadków",
-                    font=dict(color="black")
+                    font=dict(color="white") # <--- BIAŁY KOLOR
                 ),
-                tickfont=dict(color="black"),
-                
-                # TU ZMIANA: Tło ustawione na pełną przezroczystość
-                bgcolor="rgba(0,0,0,0)",
-                
+                tickfont=dict(color="white"), # <--- BIAŁY KOLOR
+                bgcolor="rgba(0,0,0,0)", # Przezroczyste tło
                 tick0=0, 
                 dtick=1 if max_cases < 10 else None
             )
