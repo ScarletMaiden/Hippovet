@@ -233,14 +233,14 @@ def save_df(df: pd.DataFrame) -> None:
 # ==========================================
 def render_public_view(df: pd.DataFrame):
     
-    # === NAGŁÓWEK Z KONIEM (POPRAWIONY) ===
+    # === NAGŁÓWEK Z KONIEM (POPRAWIONY - WYŻSZY) ===
     st.markdown("""
         <div style='
             text-align: center;
-            padding: 50px 20px;
+            /* ZWIĘKSZONY PADDING = WYŻSZY NAGŁÓWEK = WIĘCEJ ZDJĘCIA */
+            padding: 100px 20px; 
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            /* ZDJĘCIE Z MNIEJSZĄ WARSTWĄ BIELI (0.8 zamiast 0.9) */
             background-image: 
                 linear-gradient(to bottom, rgba(255,255,255,0.75), rgba(255,255,255,0.75)),
                 url("https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?q=80&w=1471&auto=format&fit=crop");
@@ -410,19 +410,18 @@ if "show_login_form" not in st.session_state:
 
 df = load_df()
 
-# --- SIDEBAR (Pasek boczny) - TERAZ ŁADNIEJSZY ---
+# --- SIDEBAR (Pasek boczny) ---
 with st.sidebar:
     
-    # Wyśrodkowane Logo (lub placeholder)
     logo_file = get_logo_path()
+    # ZMNIEJSZONE LOGO W PASKU BOCZNYM (stała szerokość 180px)
     if logo_file:
-        st.image(logo_file, use_container_width=True)
+        st.image(logo_file, width=180)
     else:
-        st.image("https://placehold.co/200x100?text=HIPPOVET", use_container_width=True)
+        st.image("https://placehold.co/200x100?text=HIPPOVET", width=180)
     
     st.write("") # Odstęp
 
-    # Obsługa logowania w ładnym kontenerze (Ramka)
     if st.session_state["logged_in"]:
         with st.container(border=True):
             st.success("✅ Zalogowano: Admin")
@@ -432,7 +431,6 @@ with st.sidebar:
                 st.rerun()
             
     else:
-        # Jeśli nie kliknięto "Administracja"
         if not st.session_state["show_login_form"]:
             st.write("")
             st.markdown("---")
@@ -440,7 +438,6 @@ with st.sidebar:
                 st.session_state["show_login_form"] = True
                 st.rerun()
         else:
-            # FORMULARZ LOGOWANIA W RAMCE
             with st.container(border=True):
                 st.markdown("**Logowanie do panelu**")
                 password = st.text_input("Hasło:", type="password", key="login_pass")
@@ -465,5 +462,5 @@ if st.session_state["logged_in"]:
 else:
     render_public_view(df)
 
-# STOPKA (Zawsze na samym dole)
+# STOPKA
 render_footer()
