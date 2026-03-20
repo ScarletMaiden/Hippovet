@@ -81,7 +81,7 @@ def render_simple_map(df: pd.DataFrame):
         lon="longitude",
         size="size",
         color="cases",
-        color_continuous_scale="Blues", 
+        color_continuous_scale=["#8B4513", "#FF0000", "#FFFFE0"],
         hover_name="Powiat",
         hover_data={"cases": True},
         zoom=5,
@@ -92,6 +92,7 @@ def render_simple_map(df: pd.DataFrame):
         margin=dict(l=0, r=0, t=0, b=0),
         uirevision="fixed",
     )
+    fig.update_traces(marker=dict(opacity=0.8, line=dict(width=1, color='Black')))
     fig.update_xaxes(fixedrange=True)
     fig.update_yaxes(fixedrange=True)
 
