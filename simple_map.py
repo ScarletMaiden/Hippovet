@@ -92,7 +92,6 @@ def render_simple_map(df: pd.DataFrame):
         margin=dict(l=0, r=0, t=0, b=0),
         uirevision="fixed",
     )
-    fig.update_traces(marker=dict(opacity=0.8, line=dict(width=1, color='Black')))
     fig.update_xaxes(fixedrange=True)
     fig.update_yaxes(fixedrange=True)
 
