@@ -81,7 +81,7 @@ def render_simple_map(df: pd.DataFrame):
         lon="longitude",
         size="size",
         color="cases",
-        color_continuous_scale=["#FFFFE0", "#8B0000", "#000000"],
+        color_continuous_scale=["#C79E33", "#8B0000", "#000000"],
         hover_name="Powiat",
         hover_data={"cases": True},
         zoom=5,
